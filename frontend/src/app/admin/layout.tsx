@@ -188,10 +188,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         Settings
                       </Link>
                       <hr className="my-1 border-gray-200 dark:border-gray-700" />
-                      <Link href="/" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <LayoutDashboard className="w-4 h-4" />
-                        View Store
-                      </Link>
                       <button
                         onClick={() => signOut({ callbackUrl: '/' })}
                         className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
