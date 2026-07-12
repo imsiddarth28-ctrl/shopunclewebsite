@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { useCartStore } from "@/store/cart";
@@ -45,6 +45,7 @@ const staggeredSocials = [
 
 export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session, status } = useSession();
   const { getItemCount } = useCartStore();
   const { resolvedTheme } = useTheme();
@@ -145,7 +146,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && searchQuery.trim())
-                    window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+                    router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
                 }}
               />
             </div>
@@ -166,7 +167,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
 
             {/* Cart */}
             <button
-              onClick={() => { window.location.href = "/cart"; }}
+              onClick={() => { router.push("/cart"); }}
               aria-label="Cart"
               className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-200"
             >

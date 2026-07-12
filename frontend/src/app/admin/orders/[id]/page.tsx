@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge, type BadgeProps } from '@/components/ui/Badge'
 import { formatPrice, formatDate } from '@/lib/utils'
+import toast from 'react-hot-toast'
 import { 
   ArrowLeft, Clock, CheckCircle, Package, Truck, 
   XCircle, AlertCircle, ShieldAlert, Key, 
@@ -47,7 +48,7 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
       setOrder(data)
     } catch (error) {
       console.error(error)
-      alert('Error fetching order details')
+      toast.error('Error fetching order details')
     } finally {
       setLoading(false)
     }
@@ -71,7 +72,7 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
       await fetchOrder()
     } catch (error) {
       console.error(error)
-      alert('Failed to update order status')
+      toast.error('Failed to update order status')
     } finally {
       setUpdatingStatus(false)
     }
@@ -95,7 +96,7 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
       setShowImageModal(true)
       fetchOrder() // Refresh access logs at the bottom
     } catch (error: any) {
-      alert(error.message || 'Access request failed')
+      toast.error(error.message || 'Access request failed')
     } finally {
       setRequestingAccess(null)
     }

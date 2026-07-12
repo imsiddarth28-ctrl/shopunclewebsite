@@ -19,6 +19,7 @@ import {
   ChevronDown, ChevronUp, RotateCcw, ShoppingCart, Gift, ClipboardCheck, ClipboardCheck as ClipboardCheckIcon,
   ChevronLeft, ChevronRight
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 const shippingCost = 99
 const freeShippingThreshold = 999
@@ -142,10 +143,10 @@ export default function CheckoutPage() {
         const orderId = result.order._id || result.order.id
         router.push(`/orders/${orderId}?success=true`)
       } else {
-        alert(result.error || 'Failed to place order')
+        toast.error(result.error || 'Failed to place order')
       }
     } catch (error) {
-      alert('Something went wrong. Please try again.')
+      toast.error('Something went wrong. Please try again.')
     } finally {
       setIsProcessing(false)
     }

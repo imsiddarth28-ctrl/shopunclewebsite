@@ -8,6 +8,7 @@ import { OrbitControls, Html, PerspectiveCamera } from '@react-three/drei'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
 import { Upload, RotateCcw, ZoomIn, ZoomOut, Download, Maximize, Minimize, Loader2, Eye, Box } from 'lucide-react'
 
 interface FrameCustomizerProps {
@@ -314,12 +315,12 @@ export function FrameCustomizer({ frameOption, onCustomizeComplete }: FrameCusto
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
+      toast.error('Please select an image file')
       return
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('Image size should be less than 10MB')
+      toast.error('Image size should be less than 10MB')
       return
     }
 
@@ -403,7 +404,7 @@ export function FrameCustomizer({ frameOption, onCustomizeComplete }: FrameCusto
       })
     } catch (error) {
       console.error('Error during customization complete upload:', error)
-      alert('Failed to save customization. Please ensure you are logged in and try again.')
+      toast.error('Failed to save customization. Please ensure you are logged in and try again.')
     } finally {
       setIsUploading(false)
     }
