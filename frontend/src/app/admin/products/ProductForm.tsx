@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
-import { Loader2, ArrowLeft, Plus, X } from 'lucide-react'
+import { Loader2, ArrowLeft, Plus, X, Upload } from 'lucide-react'
 import Link from 'next/link'
 
 interface ProductFormProps {
@@ -21,6 +21,7 @@ interface ProductFormProps {
 export function ProductForm({ initialData, categories }: ProductFormProps) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [imageInput, setImageInput] = useState('')
   const [images, setImages] = useState<string[]>(initialData?.images || [])
 
@@ -45,6 +46,40 @@ export function ProductForm({ initialData, categories }: ProductFormProps) {
       images: [],
     }
   })
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingImage(true)
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      if (ev.target?.result) {
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: ev.target.result as string }),
+          })
+
+          if (!res.ok) {
+            throw new Error('Upload failed')
+          }
+
+          const data = await res.json()
+          const newImages = [...images, data.secureUrl]
+          setImages(newImages)
+          setValue('images', newImages as [string, ...string[]])
+          toast.success('Image uploaded successfully!')
+        } catch (err) {
+          toast.error('Failed to upload image')
+        } finally {
+          setUploadingImage(false)
+        }
+      }
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleAddImage = () => {
     if (!imageInput) return
@@ -200,15 +235,33 @@ export function ProductForm({ initialData, categories }: ProductFormProps) {
           {/* Images Section */}
           <div className="space-y-3">
             <label className="label">Product Images</label>
-            <div className="flex gap-2">
-              <Input
-                value={imageInput}
-                onChange={(e) => setImageInput(e.target.value)}
-                placeholder="https://example.com/image.jpg"
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploadingImage}
+                style={{ display: 'none' }}
+                id="file-upload"
               />
-              <Button type="button" onClick={handleAddImage} className="h-12 px-4 flex-shrink-0">
-                <Plus className="w-5 h-5 mr-1" /> Add
-              </Button>
+              <label
+                htmlFor="file-upload"
+                className="btn btn-outline h-12 flex items-center justify-center cursor-pointer border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-semibold select-none whitespace-nowrap"
+              >
+                <Upload className="w-5 h-5 mr-1" />
+                {uploadingImage ? 'Uploading...' : 'Upload Image'}
+              </label>
+              <div className="flex gap-2 flex-1">
+                <Input
+                  value={imageInput}
+                  onChange={(e) => setImageInput(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="flex-1"
+                />
+                <Button type="button" onClick={handleAddImage} className="h-12 px-4 flex-shrink-0">
+                  <Plus className="w-5 h-5 mr-1" /> Add URL
+                </Button>
+              </div>
             </div>
             
             {images.length > 0 ? (
