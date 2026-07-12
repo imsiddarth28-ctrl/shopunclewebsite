@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      orders,
+      orders: orders.map(o => ({ ...o, id: o._id.toString(), _id: o._id.toString() })),
       pagination: {
         page,
         limit,

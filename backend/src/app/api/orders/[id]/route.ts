@@ -56,7 +56,7 @@ export async function GET(
       }))
     }
 
-    return NextResponse.json(order)
+    return NextResponse.json({ ...order, id: order._id.toString(), _id: order._id.toString() })
   } catch (error) {
     console.error('Get order error:', error)
     return NextResponse.json({ error: 'Failed to fetch order' }, { status: 500 })

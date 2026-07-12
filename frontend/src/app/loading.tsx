@@ -2,7 +2,7 @@ import { Loader2 } from 'lucide-react'
 
 export default function Loading() {
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/70 dark:bg-gray-950/70 backdrop-blur-md transition-opacity duration-300">
+    <div className="absolute inset-0 min-h-screen z-50 flex flex-col items-center justify-center bg-white/70 dark:bg-gray-950/70 backdrop-blur-md transition-opacity duration-300" aria-hidden="true">
       <div className="flex flex-col items-center space-y-4 p-8 rounded-3xl bg-white/40 dark:bg-gray-900/40 border border-white/20 dark:border-gray-800/20 shadow-2xl shadow-gray-200/50 dark:shadow-none">
         {/* Spinner */}
         <div className="relative flex items-center justify-center w-20 h-20">

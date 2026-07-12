@@ -152,10 +152,10 @@ export default function AdminOrdersPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {orders.map((order) => (
-                      <tr key={order.id || order._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="px-6 py-4">
                           <div>
-                            <Link href={`/admin/orders/${order.id || order._id}`} className="font-mono text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                            <Link href={`/admin/orders/${order.id}`} className="font-mono text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
                               {order.orderNumber}
                             </Link>
                             {order.orderType === 'PERSONALIZED' && (
