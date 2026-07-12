@@ -1,0 +1,315 @@
+/* ── Linear ease ── */
+:root {
+  --linear-ease: linear(
+    0, 0.068, 0.19 2.7%, 0.804 8.1%, 1.037,
+    1.199 13.2%, 1.245, 1.27 15.8%, 1.274,
+    1.272 17.4%, 1.249 19.1%, 0.996 28%, 0.949,
+    0.928 33.3%, 0.926, 0.933 36.8%, 1.001 45.6%,
+    1.013, 1.019 50.8%, 1.018 54.4%, 1 63.1%,
+    0.995 68%, 1.001 85%, 1
+  );
+
+  /* ── Light mode tokens ── */
+  --gooey-text:         #374151;          /* gray-700 — readable on light bg */
+  --gooey-text-active:  #ffffff;          /* white text on orange pill */
+  --gooey-pill:         #f97316;          /* primary-500 orange */
+  --gooey-backdrop:     #ffffff;
+
+  /* Particle colours – light mode (orange/amber burst) */
+  --color-1: #f97316;
+  --color-2: #fb923c;
+  --color-3: #fbbf24;
+  --color-4: #ea580c;
+}
+
+/* ── Dark mode tokens ── */
+.dark {
+  --gooey-text:         rgba(255, 255, 255, 0.72);
+  --gooey-text-active:  #111827;
+  --gooey-pill:         #ffffff;
+  --gooey-backdrop:     #000000;
+
+  /* Particle colours – dark */
+  --color-1: #ffffff;
+  --color-2: #f0f0f0;
+  --color-3: #fbbf24;
+  --color-4: #fdba74;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   .gooey-dark-pill — forced dark variant
+   Wrap GooeyNav in this class when it sits inside a dark pill
+   container. The black ::before backdrop blends invisibly with
+   the pill's dark background (mix-blend-mode: lighten), and the
+   white pill + particles look great in both page themes.
+   ───────────────────────────────────────────────────────────── */
+.gooey-dark-pill {
+  --gooey-text:         rgba(255, 255, 255, 0.82);
+  --gooey-text-active:  #111827;
+  --gooey-pill:         #ffffff;
+  --gooey-backdrop:     #000000;
+  /* Particle colours — white/amber look great on dark pill */
+  --color-1: #ffffff;
+  --color-2: #f0f0f0;
+  --color-3: #fbbf24;
+  --color-4: #fdba74;
+}
+
+/* Always use lighten blend inside the dark pill (both themes) */
+.gooey-dark-pill .gooey-nav-container .effect.filter {
+  mix-blend-mode: lighten !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   .gooey-transparent — navbar-safe, transparent-bg variant
+   Removes the CSS filter+blend-mode trick entirely (that trick
+   needs a solid backdrop, which bleeds on transparent navbars).
+   Keeps the particle burst + pill slide animations fully intact.
+   Pill = primary orange in light, white in dark.
+   Particles = solid colored circles (no merge/blend effect).
+   ───────────────────────────────────────────────────────────── */
+.gooey-transparent .gooey-nav-container .effect.filter {
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+/* Hide the big solid backdrop — no more bleeding */
+.gooey-transparent .gooey-nav-container .effect.filter::before {
+  display: none !important;
+}
+/* Pill becomes a normal colored element */
+.gooey-transparent .gooey-nav-container .effect.filter::after {
+  background: var(--gooey-pill) !important;
+  border-radius: 100vw !important;
+  opacity: 0;
+  transform: scale(0);
+}
+/* Text overlay colour matches pill */
+.gooey-transparent .gooey-nav-container .effect.text {
+  color: var(--gooey-text);
+}
+.gooey-transparent .gooey-nav-container .effect.text.active {
+  color: var(--gooey-text-active) !important;
+}
+
+/* ── Container ── */
+.gooey-nav-container {
+  position: relative;
+}
+
+.gooey-nav-container nav {
+  display: flex;
+  position: relative;
+  transform: translate3d(0, 0, 0.01px);
+}
+
+/* ── List ── */
+.gooey-nav-container nav ul {
+  display: flex;
+  gap: 0.25em;
+  list-style: none;
+  padding: 0 0.25em;
+  margin: 0;
+  position: relative;
+  z-index: 3;
+  color: var(--gooey-text);
+  text-shadow: none;
+}
+
+/* ── Items ── */
+.gooey-nav-container nav ul li {
+  border-radius: 100vw;
+  position: relative;
+  cursor: pointer;
+  transition: color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 0.5px 1.5px transparent;
+  color: var(--gooey-text);
+}
+
+.gooey-nav-container nav ul li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.5em 0.85em;
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+.gooey-nav-container nav ul li:focus-within:has(:focus-visible) {
+  box-shadow: 0 0 0.5px 1.5px var(--gooey-pill);
+}
+
+/* White pill on hover (shown when active) */
+.gooey-nav-container nav ul li::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: var(--gooey-pill);
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s ease;
+  z-index: -1;
+}
+
+.gooey-nav-container nav ul li.active {
+  color: var(--gooey-text-active);
+  text-shadow: none;
+}
+
+.gooey-nav-container nav ul li.active a {
+  color: var(--gooey-text-active);
+}
+
+.gooey-nav-container nav ul li.active::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ── Effect layers ── */
+.gooey-nav-container .effect {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  opacity: 1;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+/* Text overlay (matches active pill text) */
+.gooey-nav-container .effect.text {
+  color: var(--gooey-pill);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+.gooey-nav-container .effect.text.active {
+  color: var(--gooey-text-active);
+}
+
+/* ── Gooey filter ── LIGHT mode: darken blend ── */
+.gooey-nav-container .effect.filter {
+  filter: blur(7px) contrast(100) blur(0);
+  mix-blend-mode: darken;
+}
+
+.gooey-nav-container .effect.filter::before {
+  content: '';
+  position: absolute;
+  /* Only spread horizontally — prevents bleeding above/below the navbar */
+  top: -12px;
+  bottom: -12px;
+  left: -75px;
+  right: -75px;
+  z-index: -2;
+  background: var(--gooey-backdrop);
+}
+
+.gooey-nav-container .effect.filter::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gooey-pill);
+  transform: scale(0);
+  opacity: 0;
+  z-index: -1;
+  border-radius: 100vw;
+}
+
+/* ── Gooey filter ── DARK mode: lighten blend ── */
+.dark .gooey-nav-container .effect.filter {
+  mix-blend-mode: lighten;
+}
+
+.gooey-nav-container .effect.active::after {
+  animation: pill 0.3s ease both;
+}
+
+@keyframes pill {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Particles ── */
+.particle,
+.point {
+  display: block;
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 100%;
+  transform-origin: center;
+}
+
+.particle {
+  --time: 5s;
+  position: absolute;
+  top: calc(50% - 8px);
+  left: calc(50% - 8px);
+  animation: particle calc(var(--time)) ease 1 -350ms;
+}
+
+.point {
+  background: var(--color);
+  opacity: 1;
+  animation: point calc(var(--time)) ease 1 -350ms;
+}
+
+@keyframes particle {
+  0% {
+    transform: rotate(0deg) translate(var(--start-x), var(--start-y));
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  70% {
+    transform: rotate(calc(var(--rotate) * 0.5)) translate(calc(var(--end-x) * 1.2), calc(var(--end-y) * 1.2));
+    opacity: 1;
+    animation-timing-function: ease;
+  }
+  85% {
+    transform: rotate(calc(var(--rotate) * 0.66)) translate(var(--end-x), var(--end-y));
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(calc(var(--rotate) * 1.2)) translate(calc(var(--end-x) * 0.5), calc(var(--end-y) * 0.5));
+    opacity: 1;
+  }
+}
+
+@keyframes point {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  25% {
+    transform: scale(calc(var(--scale) * 0.25));
+  }
+  38% {
+    opacity: 1;
+  }
+  65% {
+    transform: scale(var(--scale));
+    opacity: 1;
+    animation-timing-function: ease;
+  }
+  85% {
+    transform: scale(var(--scale));
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}

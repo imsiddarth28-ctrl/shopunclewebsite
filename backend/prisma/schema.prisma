@@ -1,0 +1,448 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String    @unique
+  password      String
+  role          Role      @default(CUSTOMER)
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  addresses     Address[]
+  orders        Order[]
+  cart          Cart?
+  wishlist      Wishlist?
+  coupons       CouponUsage[]
+  reviews       Review[]
+  customizations Customization[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Address {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  phone         String
+  addressLine1  String
+  addressLine2  String?
+  city          String
+  state         String
+  postalCode    String
+  country       String   @default("India")
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orders        Order[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+model Category {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String    @unique
+  description String?
+  image       String?
+  parentId    String?   @db.ObjectId
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Product {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  slug            String           @unique
+  description     String
+  shortDescription String?
+  price           Float
+  compareAtPrice  Float?
+  sku             String?          @unique
+  categoryId      String           @db.ObjectId
+  category        Category         @relation(fields: [categoryId], references: [id])
+  images          String[]
+  isCustomizable  Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  isFeatured      Boolean          @default(false)
+  tags            String[]
+  stock           Int              @default(0)
+  trackInventory  Boolean          @default(true)
+  weight          Float?
+  dimensions      Json?
+  seoTitle        String?
+  seoDescription  String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  frames          FrameOption[]
+  orderItems      OrderItem[]
+  cartItems       CartItem[]
+  wishlistItems   WishlistItem[]
+  reviews         Review[]
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([isActive, isFeatured])
+  @@map("products")
+}
+
+model FrameOption {
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
+  productId       String     @db.ObjectId
+  product         Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  thumbnailUrl    String
+  modelUrl        String?
+  textureUrl      String?
+  basePrice       Float
+  sizes           FrameSize[]
+  materials       FrameMaterial[]
+  isActive        Boolean    @default(true)
+  sortOrder       Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  customizations  Customization[]
+
+  @@index([productId])
+  @@map("frame_options")
+}
+
+model FrameSize {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  frameOptionId   String       @db.ObjectId
+  frameOption     FrameOption  @relation(fields: [frameOptionId], references: [id], onDelete: Cascade)
+  size            String
+  price           Float
+  dimensions      FrameDimensions
+  isActive        Boolean      @default(true)
+}
+
+model FrameDimensions {
+  width  Float
+  height Float
+  depth  Float
+}
+
+model FrameMaterial {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  frameOptionId   String       @db.ObjectId
+  frameOption     FrameOption  @relation(fields: [frameOptionId], references: [id], onDelete: Cascade)
+  name            String
+  textureUrl      String
+  priceModifier   Float        @default(0)
+  isActive        Boolean      @default(true)
+}
+
+model Cart {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String     @unique @db.ObjectId
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  updatedAt DateTime   @updatedAt
+  createdAt DateTime   @default(now())
+}
+
+model CartItem {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  cartId          String       @db.ObjectId
+  cart            Cart         @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId       String       @db.ObjectId
+  product         Product      @relation(fields: [productId], references: [id])
+  quantity        Int          @default(1)
+  frameOptionId   String?      @db.ObjectId
+  frameOption     FrameOption? @relation(fields: [frameOptionId], references: [id])
+  size            String?
+  material        String?
+  customizationData Json?
+  previewImage    String?
+  price           Float
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([cartId, productId, frameOptionId, size, material])
+  @@map("cart_items")
+}
+
+model Wishlist {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String        @unique @db.ObjectId
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model WishlistItem {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  wishlistId      String       @db.ObjectId
+  wishlist        Wishlist     @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId       String       @db.ObjectId
+  product         Product      @relation(fields: [productId], references: [id])
+  frameOptionId   String?      @db.ObjectId
+  frameOption     FrameOption? @relation(fields: [frameOptionId], references: [id])
+  size            String?
+  material        String?
+  createdAt       DateTime     @default(now())
+
+  @@unique([wishlistId, productId, frameOptionId, size, material])
+  @@map("wishlist_items")
+}
+
+model Order {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber     String       @unique
+  userId          String       @db.ObjectId
+  user            User         @relation(fields: [userId], references: [id])
+  status          OrderStatus  @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   PaymentMethod
+  paymentId       String?
+  subtotal        Float
+  tax             Float        @default(0)
+  shipping        Float        @default(0)
+  discount        Float        @default(0)
+  total           Float
+  currency        String       @default("INR")
+  shippingAddress Json
+  billingAddress  Json?
+  notes           String?
+  couponCode      String?
+  couponId        String?      @db.ObjectId
+  coupon          Coupon?      @relation(fields: [couponId], references: [id])
+  items           OrderItem[]
+  statusHistory   OrderStatusHistory[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  READY_FOR_SHIPMENT
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  STRIPE
+  COD
+}
+
+model OrderItem {
+  id                  String       @id @default(auto()) @map("_id") @db.ObjectId
+  orderId             String       @db.ObjectId
+  order               Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId           String       @db.ObjectId
+  product             Product      @relation(fields: [productId], references: [id])
+  frameOptionId       String?      @db.ObjectId
+  frameOption         FrameOption? @relation(fields: [frameOptionId], references: [id])
+  quantity            Int
+  size                String?
+  material            String?
+  customizationData   Json?
+  previewImage        String?
+  unitPrice           Float
+  totalPrice          Float
+  createdAt           DateTime     @default(now())
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderId     String      @db.ObjectId
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status      OrderStatus
+  note        String?
+  createdBy   String?     @db.ObjectId
+  createdAt   DateTime    @default(now())
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+model Coupon {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  code            String         @unique
+  description     String?
+  discountType    DiscountType
+  discountValue   Float
+  minOrderValue   Float?
+  maxDiscount     Float?
+  usageLimit      Int?
+  usedCount       Int            @default(0)
+  validFrom       DateTime
+  validUntil      DateTime
+  isActive        Boolean        @default(true)
+  usages          CouponUsage[]
+  orders          Order[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("coupons")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model CouponUsage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  couponId  String   @db.ObjectId
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  @@unique([couponId, userId, orderId])
+  @@map("coupon_usages")
+}
+
+model Review {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId   String   @db.ObjectId
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderId     String   @db.ObjectId
+  rating      Int
+  title       String?
+  comment     String?
+  images      String[]
+  isVerified  Boolean  @default(false)
+  isApproved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, productId, orderId])
+  @@index([productId])
+  @@index([isApproved])
+  @@map("reviews")
+}
+
+model Customization {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  frameOptionId   String       @db.ObjectId
+  frameOption     FrameOption  @relation(fields: [frameOptionId], references: [id], onDelete: Cascade)
+  userId          String       @db.ObjectId
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalImage   String
+  processedImage  String?
+  previewImage    String?
+  position        Json
+  scale           Float        @default(1)
+  rotation        Float        @default(0)
+  textOverlays    Json?
+  collageLayout   String?
+  status          String       @default("DRAFT")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([frameOptionId])
+  @@map("customizations")
+}
+
+model SiteSettings {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  key             String   @unique
+  value           Json
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  event     String
+  userId    String?  @db.ObjectId
+  sessionId String
+  properties Json
+  createdAt DateTime @default(now())
+
+  @@index([event])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
