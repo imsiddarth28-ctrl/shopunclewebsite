@@ -28,6 +28,14 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', '@tanstack/react-query'],
   },
+  // Disable webpack filesystem cache to prevent stale vendor-chunk errors
+  // when the dev server is restarted without clearing .next
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.cache = false
+    }
+    return config
+  },
   async rewrites() {
     return [
       {

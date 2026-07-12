@@ -5,6 +5,9 @@
   "scripts": {
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
+    "dev:frontend:clean": "cd frontend && npx rimraf .next && npm run dev",
+    "dev:backend:clean": "cd backend && npx rimraf .next && npm run dev",
+    "clean": "npx rimraf frontend/.next backend/.next frontend/node_modules/.cache backend/node_modules/.cache",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "cd backend && npm run build",
     "db:seed": "cd backend && npm run db:seed"
