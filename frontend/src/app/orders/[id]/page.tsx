@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -25,8 +25,8 @@ const statusConfig = {
   RETURNED: { variant: 'destructive', label: 'Returned', icon: AlertCircle },
 }
 
-export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function OrderDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params
   const router = useRouter()
   const searchParams = useSearchParams()
   const isSuccess = searchParams.get('success') === 'true'
