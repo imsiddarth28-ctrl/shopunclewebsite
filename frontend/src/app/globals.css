@@ -213,4 +213,59 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* ===================== Frame themes ===================== */
+  .t-blossom {
+    background-color: #E9C3CC;
+    background-image:
+      repeating-radial-gradient(circle at 12px 12px, #F4DEE3 0 3px, transparent 4px 24px),
+      repeating-radial-gradient(circle at 0 0, #C97D90 0 2px, transparent 3px 24px);
+    background-size: 24px 24px;
+  }
+  .t-marigold {
+    background-color: #EFC26B;
+    background-image:
+      repeating-linear-gradient(45deg, #E39A3B 0 4px, transparent 4px 18px),
+      repeating-linear-gradient(-45deg, #F6DBA0 0 3px, transparent 3px 18px);
+    background-size: 18px 18px;
+  }
+  .t-indigo {
+    background-color: #4C5C82;
+    background-image:
+      repeating-linear-gradient(90deg, #64769E 0 8px, #3D4A69 8px 16px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 2px, transparent 2px 16px);
+    background-size: 16px 16px;
+  }
+  .t-filigree {
+    background-color: #EDE2C8;
+    background-image:
+      repeating-radial-gradient(circle at 10px 10px, transparent 0 6px, #C9A25E 7px 8px, transparent 9px 20px);
+    background-size: 20px 20px;
+  }
+  .t-walnut {
+    background-color: #6B4530;
+    background-image:
+      repeating-linear-gradient(95deg, rgba(0,0,0,.15) 0 2px, transparent 2px 10px, rgba(255,255,255,.05) 10px 12px);
+    background-size: 12px 100%;
+  }
+  .t-sage {
+    background-color: #D8DEC4;
+    background-image:
+      repeating-linear-gradient(60deg, #8FA073 0 3px, transparent 3px 22px),
+      repeating-linear-gradient(-60deg, #6E7F5C 0 3px, transparent 3px 22px);
+    background-size: 22px 22px;
+  }
+  .t-kraft {
+    background-color: #D9C7A4;
+    background-image:
+      repeating-radial-gradient(circle at 8px 8px, #C2A876 0 2px, transparent 3px 16px);
+    background-size: 16px 16px;
+  }
+  .t-monsoon {
+    background-color: #A9C2CE;
+    background-image:
+      repeating-linear-gradient(115deg, #7FA1B3 0 6px, transparent 6px 26px),
+      repeating-linear-gradient(115deg, rgba(255,255,255,.35) 0 2px, transparent 2px 26px);
+    background-size: 26px 26px;
+  }
 }

@@ -20,21 +20,23 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
-  { label: "Home",         href: "/" },
-  { label: "Frames",       href: "/frames" },
-  { label: "Products",     href: "/products" },
-  { label: "Categories",   href: "/categories" },
+  { label: "Home",           href: "/" },
+  { label: "Frames",         href: "/frames" },
+  { label: "Products",       href: "/products" },
+  { label: "Categories",     href: "/categories" },
+  { label: "Vintage Strip",  href: "/vintage-strip" },
 ];
 
 // StaggeredMenu items (mobile full-screen nav)
 const staggeredItems = [
-  { label: "Home",         ariaLabel: "Go to home page",       link: "/" },
-  { label: "Frames",       ariaLabel: "Browse photo frames",   link: "/frames" },
-  { label: "Products",     ariaLabel: "Browse all products",   link: "/products" },
-  { label: "Categories",   ariaLabel: "All categories",        link: "/categories" },
-  { label: "Wishlist",     ariaLabel: "My wishlist",           link: "/wishlist" },
-  { label: "Track Order",  ariaLabel: "Track your order",      link: "/help/track-order" },
-  { label: "Contact",      ariaLabel: "Contact us",            link: "/help/contact" },
+  { label: "Home",          ariaLabel: "Go to home page",       link: "/" },
+  { label: "Frames",        ariaLabel: "Browse photo frames",   link: "/frames" },
+  { label: "Products",      ariaLabel: "Browse all products",   link: "/products" },
+  { label: "Categories",    ariaLabel: "All categories",        link: "/categories" },
+  { label: "Vintage Strip", ariaLabel: "Make a vintage strip",  link: "/vintage-strip" },
+  { label: "Wishlist",      ariaLabel: "My wishlist",           link: "/wishlist" },
+  { label: "Track Order",   ariaLabel: "Track your order",      link: "/help/track-order" },
+  { label: "Contact",       ariaLabel: "Contact us",            link: "/help/contact" },
 ];
 
 const staggeredSocials = [

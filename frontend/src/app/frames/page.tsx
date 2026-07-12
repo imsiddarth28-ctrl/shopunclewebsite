@@ -332,12 +332,19 @@ export default function FramesListingPage() {
                             )}
                           </div>
 
-                          <Link href={`/personalized/${frame.id}?theme=${frame.themeId}`}>
-                            <Button size="sm" className="h-8 text-xs font-bold gap-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full">
-                              Customize
-                              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                            </Button>
-                          </Link>
+                          <div className="flex gap-2">
+                            <Link href={`/frame-designer?theme=${frame.themeId}`}>
+                              <Button size="sm" className="h-8 text-xs font-bold gap-1 bg-amber-500 hover:bg-amber-400 text-gray-900 rounded-full">
+                                Design
+                              </Button>
+                            </Link>
+                            <Link href={`/personalized/${frame.id}?theme=${frame.themeId}`}>
+                              <Button size="sm" className="h-8 text-xs font-bold gap-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full">
+                                3D Custom
+                                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -347,6 +354,24 @@ export default function FramesListingPage() {
             })}
           </StaggerContainer>
         )}
+      </div>
+
+      {/* ── vintage strip promo band ── */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 mt-12">
+        <div className="flex items-center justify-between gap-6 flex-wrap bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl px-8 py-7 text-white">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">Premium Feature</p>
+            <h3 className="font-serif text-xl font-medium mb-1">Try the Vintage Photo Strip</h3>
+            <p className="text-gray-300 text-sm">Three photos, one film-booth strip — a premium extra you can order framed.</p>
+          </div>
+          <Link
+            href="/vintage-strip"
+            className="shrink-0 inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-gray-900 font-bold px-6 py-3 rounded-full transition-colors text-sm"
+          >
+            Explore
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
     </div>
   )
