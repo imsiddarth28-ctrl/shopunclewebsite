@@ -122,11 +122,8 @@ export default function CheckoutPage() {
       const result = await response.json()
       
       if (response.ok) {
-        if (data.paymentMethod === 'cod') {
-          router.push(`/orders/${result.order.id}?success=true`)
-        } else {
-          window.location.href = result.paymentUrl
-        }
+        const orderId = result.order._id || result.order.id
+        router.push(`/orders/${orderId}?success=true`)
       } else {
         alert(result.error || 'Failed to place order')
       }
@@ -416,70 +413,7 @@ export default function CheckoutPage() {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-gray-300">Subtotal ({getItemCount()} items)</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{formatPrice(subtotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-gray-300">Shipping</span>
-                        <span className="font-medium">
-                          {shipping === 0 ? (
-                            <span className="text-green-600 dark:text-green-400">FREE</span>
-                          ) : (
-                            formatPrice(shipping)
-                          )}
-                        </span>
-                      </div>
-                      <div className="border-t dark:border-gray-700 pt-3 flex justify-between text-lg font-bold text-gray-900 dark:text-white">
-                        <span>Total</span>
-                        <span>{formatPrice(total)}</span>
-                      </div>
-                    </div>
 
-                    <div className="pt-4 border-t dark:border-gray-700 grid grid-cols-3 gap-2 text-center">
-                      <div className="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                        <Shield className="w-4 h-4 mx-auto text-primary-600 dark:text-primary-400 mb-1" />
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Secure</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                        <Truck className="w-4 h-4 mx-auto text-blue-500 mb-1" />
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Fast Delivery</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                        <RotateCcw className="w-4 h-4 mx-auto text-purple-500 mb-1" />
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Easy Returns</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-gray-300">Subtotal ({getItemCount()} items)</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{formatPrice(subtotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-gray-300">Shipping</span>
-                        <span className="font-medium">
-                          {shipping === 0 ? (
-                            <span className="text-green-600 dark:text-green-400">FREE</span>
-                          ) : (
-                            formatPrice(shipping)
-                          )}
-                        </span>
-                      </div>
-                      <div className="border-t dark:border-gray-700 pt-3 flex justify-between text-lg font-bold text-gray-900 dark:text-white">
-                        <span>Total</span>
-                        <span>{formatPrice(total)}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
                 <div className="flex gap-3">
                   {step > 1 && (
