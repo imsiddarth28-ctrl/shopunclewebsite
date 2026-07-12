@@ -11,9 +11,52 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+
+    const designerFrameIds = [
+      'angelic-designer-frame',
+      'converge-designer-frame',
+      'crystal-line-designer-frame',
+      'whimsical-designer-frame',
+      'azure-designer-frame',
+      'spring-designer-frame',
+      'blossom-designer-frame',
+      'velvety-designer-frame'
+    ]
+
+    if (designerFrameIds.includes(id)) {
+      const formattedName = id
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+
+      return NextResponse.json({
+        _id: id,
+        id: id,
+        name: formattedName,
+        price: 449,
+        compareAtPrice: 699,
+        images: ['/products/placeholder.jpg'],
+        description: 'Custom premium designed photo frame',
+        shortDescription: 'Custom premium designed photo frame',
+        isCustomizable: true,
+        isActive: true,
+        categoryId: '65f123456789012345678901',
+        frameOptions: [],
+        reviews: [],
+        averageRating: 4.8,
+        reviewCount: 12
+      })
+    }
+
     const { db } = await connectToDatabase()
 
-    const product = await db.collection('products').findOne({ _id: getObjectId(id) })
+    let product = null
+    try {
+      product = await db.collection('products').findOne({ _id: getObjectId(id) })
+    } catch (e) {
+      // Invalid ObjectId format and not a designer frame
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
