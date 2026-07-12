@@ -93,7 +93,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
   }
 
   // Double check ownership safety
-  const isOwner = order.userId === session?.user?.id
+  const isOwner = order.userId === session?.user?.id || order.userId?.toString() === session?.user?.id
   const isAdmin = session?.user?.role === 'ADMIN'
   if (!isOwner && !isAdmin) {
     return (
