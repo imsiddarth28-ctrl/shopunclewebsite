@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -60,6 +60,13 @@ export default function CheckoutPage() {
   } = useForm<OrderInput>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
+      items: items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        frameOptionId: item.frameOptionId,
+        customizationData: item.customizationData,
+        previewImage: item.previewImage,
+      })),
       shippingAddress: session?.user ? {
         name: session.user.name || '',
         phone: '',
@@ -94,6 +101,16 @@ export default function CheckoutPage() {
       notes: '',
     },
   })
+
+  useEffect(() => {
+    setValue('items', items.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      frameOptionId: item.frameOptionId,
+      customizationData: item.customizationData,
+      previewImage: item.previewImage,
+    })))
+  }, [items, setValue])
 
   const onSubmit = async (data: OrderInput) => {
     if (!session?.user) {
