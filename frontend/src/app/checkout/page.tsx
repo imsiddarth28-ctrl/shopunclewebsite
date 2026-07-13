@@ -11,7 +11,7 @@ import { useCartStore } from '@/store/cart'
 import Link from 'next/link'
 import { 
   ShoppingCart, Gift, ArrowLeft, CheckCircle2, 
-  Copy, Phone, MapPin, NotepadText, Send, Check
+  Copy, Phone, MapPin, NotepadText, Send, Check, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [orderResult, setOrderResult] = useState<{ orderId: string; otp: string; whatsappLink: string } | null>(null)
   const [copiedOrderId, setCopiedOrderId] = useState(false)
   const [copiedOtp, setCopiedOtp] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   const subtotal = getSubtotal()
   const shipping = subtotal >= 999 ? 0 : 99
@@ -42,7 +43,7 @@ export default function CheckoutPage() {
     }
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!fullName.trim() || !phone.trim() || !address.trim()) {
@@ -50,6 +51,11 @@ export default function CheckoutPage() {
       return
     }
 
+    setShowConfirmModal(true)
+  }
+
+  const executeOrderPlacement = async () => {
+    setShowConfirmModal(false)
     setIsProcessing(true)
 
     try {
@@ -426,6 +432,83 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b dark:border-gray-800 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-gray-900 dark:text-white">Confirm Your Order</h3>
+              <button 
+                type="button" 
+                onClick={() => setShowConfirmModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Delivery Details</h4>
+                <div className="bg-gray-50 dark:bg-gray-950/40 p-4 rounded-xl space-y-2 border dark:border-gray-800 text-sm">
+                  <p className="text-gray-900 dark:text-white"><strong className="font-semibold text-gray-500 dark:text-gray-400">Name:</strong> {fullName}</p>
+                  <p className="text-gray-900 dark:text-white"><strong className="font-semibold text-gray-500 dark:text-gray-400">Phone:</strong> {phone}</p>
+                  <p className="text-gray-900 dark:text-white"><strong className="font-semibold text-gray-500 dark:text-gray-400">Address:</strong> {address}</p>
+                  {notes && (
+                    <p className="text-gray-900 dark:text-white"><strong className="font-semibold text-gray-500 dark:text-gray-400">Notes:</strong> {notes}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Order Summary</h4>
+                <div className="max-h-40 overflow-y-auto divide-y dark:divide-gray-800 border dark:border-gray-800 rounded-xl bg-gray-50/40 dark:bg-gray-950/20">
+                  {items.map((item) => (
+                    <div key={item.id} className="p-3 flex justify-between items-center text-xs">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <p className="font-semibold text-gray-900 dark:text-white truncate">{item.name}</p>
+                        <p className="text-gray-500">Qty: {item.quantity}</p>
+                      </div>
+                      <span className="font-medium text-gray-950 dark:text-white shrink-0">{formatPrice(item.price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t dark:border-gray-800 pt-4 flex justify-between items-center font-bold text-gray-900 dark:text-white text-base">
+                <span>Total Amount:</span>
+                <span className="text-emerald-600 dark:text-emerald-400">{formatPrice(total)}</span>
+              </div>
+
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl text-xs text-amber-800 dark:text-amber-400 flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>Confirming will record this order in our system and prompt you to send details via WhatsApp to complete.</span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="bg-gray-50 dark:bg-gray-950/20 px-6 py-4 border-t dark:border-gray-800 flex justify-end gap-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowConfirmModal(false)}
+                className="px-5 py-2.5 rounded-xl"
+              >
+                Go Back
+              </Button>
+              <Button 
+                type="button" 
+                onClick={executeOrderPlacement}
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-emerald-500/20"
+              >
+                Confirm & Send
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
