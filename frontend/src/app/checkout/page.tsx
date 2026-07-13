@@ -14,9 +14,11 @@ import {
   Copy, Phone, MapPin, NotepadText, Send, Check, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useSession } from 'next-auth/react'
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const { items, getSubtotal, getItemCount, clearCart } = useCartStore()
 
   // Form states
@@ -36,12 +38,26 @@ export default function CheckoutPage() {
   const shipping = subtotal >= 999 ? 0 : 99
   const total = subtotal + shipping
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin?callbackUrl=/checkout')
+    }
+  }, [status, router])
+
   // Clear states when component unmounts
   useEffect(() => {
     return () => {
       setOrderResult(null)
     }
   }, [])
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
+      </div>
+    )
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
