@@ -1,0 +1,33 @@
+# Render Blueprint Specification
+# This file automates the creation and configuration of the backend web service on Render.
+# For more info: https://render.com/docs/blueprints
+
+services:
+  - type: web
+    name: shopuncle-backend
+    env: node
+    plan: free # Can be changed to starter, standard, etc.
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # Set in dashboard
+      - key: MONGODB_DB
+        value: shopuncle
+      - key: NEXTAUTH_URL
+        sync: false # Set in dashboard
+      - key: NEXTAUTH_SECRET
+        sync: false # Set in dashboard
+      - key: SHOP_OWNER_NUMBER
+        sync: false # Set in dashboard
+      - key: SHOP_OWNER_KEY
+        sync: false # Set in dashboard
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # Set in dashboard
+      - key: CLOUDINARY_API_KEY
+        sync: false # Set in dashboard
+      - key: CLOUDINARY_API_SECRET
+        sync: false # Set in dashboard
