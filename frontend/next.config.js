@@ -45,6 +45,15 @@ const nextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      {
+        source: '/personalized',
+        destination: '/frames?filter=customizable',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

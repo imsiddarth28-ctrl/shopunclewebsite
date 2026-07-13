@@ -257,7 +257,7 @@ export default function CheckoutPage() {
               Add products or designs to your cart before proceeding to checkout.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/personalized">
+              <Link href="/frames?filter=customizable">
                 <Button size="lg" className="w-full sm:w-auto">
                   <Gift className="w-5 h-5 mr-2" />
                   Personalized Gifts

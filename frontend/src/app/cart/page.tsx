@@ -47,7 +47,7 @@ export default function CartPage() {
               Looks like you haven't added any gifts yet. Start shopping to find the perfect personalized present!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/personalized">
+              <Link href="/frames?filter=customizable">
                 <Button size="lg" className="w-full sm:w-auto">
                   <Gift className="w-5 h-5 mr-2" />
                   Create Personalized Gift

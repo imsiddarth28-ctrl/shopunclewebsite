@@ -272,13 +272,13 @@ export default function HomePage() {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="flex flex-col sm:flex-row gap-4 justify-start"
               >
-                <Link href="/personalized">
+                <Link href="/frames?filter=customizable">
                   <Button size="xl" className="w-full sm:w-auto shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 transition-shadow duration-300">
                     Start Personalizing
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                <Link href="/frames">
+                <Link href="/frames?filter=ready">
                   <Button size="xl" variant="outline" className="w-full sm:w-auto hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-300">
                     Browse Ready Frames
                   </Button>
@@ -322,7 +322,7 @@ export default function HomePage() {
                 <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
                   Select your product, upload your picture, and preview in real-time 3D with our customized canvas weaver technology.
                 </p>
-                <Link href="/personalized">
+                <Link href="/frames?filter=customizable">
                   <span className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center justify-center gap-1 cursor-pointer group">
                     Try Live Preview Now <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </span>
@@ -502,13 +502,13 @@ export default function HomePage() {
             </p>
           </ScrollReveal>
           <ScrollReveal delay={0.1} className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/personalized">
+            <Link href="/frames?filter=customizable">
               <Button size="xl" variant="secondary" className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-shadow duration-300">
                 Start Personalizing Now
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
-            <Link href="/frames">
+            <Link href="/frames?filter=ready">
               <Button size="xl" variant="outline" className="w-full sm:w-auto border-white text-white hover:bg-white/10 transition-colors duration-300">
                 Browse Ready Frames
               </Button>

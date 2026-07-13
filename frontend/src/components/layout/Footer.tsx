@@ -10,7 +10,7 @@ const footerLinks = {
   shop: [
     { name: 'All Products', href: '/products' },
     { name: 'Photo Frames', href: '/frames' },
-    { name: 'Personalized Gifts', href: '/personalized' },
+    { name: 'Personalized Gifts', href: '/frames?filter=customizable' },
     { name: 'Custom Frames', href: '/custom-frames' },
     { name: 'Bestsellers', href: '/bestsellers' },
     { name: 'New Arrivals', href: '/new-arrivals' },

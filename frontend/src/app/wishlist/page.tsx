@@ -75,7 +75,7 @@ export default function WishlistPage() {
                 Save your favorite personalized gifts, photo frames, and canvases here to keep track of what you love.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/personalized">
+                <Link href="/frames?filter=customizable">
                   <Button size="lg" className="w-full sm:w-auto shadow-md">
                     <Sparkles className="w-4 h-4 mr-2" />
                     3D Custom Studio

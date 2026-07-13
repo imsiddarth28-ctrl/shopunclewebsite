@@ -47,7 +47,7 @@ export default async function OrdersPage() {
             <p className="body-sm mb-6">
               You haven't placed any orders with us yet. Start creating your custom gift today!
             </p>
-            <Link href="/personalized">
+            <Link href="/frames?filter=customizable">
               <Button>Start Customizing</Button>
             </Link>
           </CardContent>

@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -19,8 +20,6 @@ const DESIGNER_FRAMES = [
     id: 'angelic-designer-frame',
     name: 'Angelic Designer Frame with Photo',
     price: 449,
-    compareAtPrice: 699,
-    discount: 35,
     themeId: 't-blossom',
     photoUrl: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=350&auto=format&fit=crop',
     tags: ['floral', 'baby', 'pastel'],
@@ -30,8 +29,6 @@ const DESIGNER_FRAMES = [
     id: 'converge-designer-frame',
     name: 'Converge Designer Frame with Photo',
     price: 449,
-    compareAtPrice: 699,
-    discount: 35,
     themeId: 't-filigree',
     photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=350&auto=format&fit=crop',
     tags: ['abstract', 'modern', 'minimal'],
@@ -41,30 +38,24 @@ const DESIGNER_FRAMES = [
     id: 'crystal-line-designer-frame',
     name: 'Crystal Line Designer Frame with Photo',
     price: 449,
-    compareAtPrice: 699,
-    discount: 35,
     themeId: 't-marigold',
     photoUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=350&auto=format&fit=crop',
     tags: ['geometric', 'chevron', 'orange'],
-    isCustomizable: true
+    isCustomizable: false
   },
   {
     id: 'whimsical-designer-frame',
     name: 'Whimsical Designer Frame with Photo',
     price: 449,
-    compareAtPrice: 699,
-    discount: 35,
     themeId: 't-monsoon',
     photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=350&auto=format&fit=crop',
     tags: ['gradient', 'pastel', 'playful'],
-    isCustomizable: true
+    isCustomizable: false
   },
   {
     id: 'azure-designer-frame',
     name: 'Azure Designer Frame with Photo',
     price: 449,
-    compareAtPrice: 699,
-    discount: 35,
     themeId: 't-indigo',
     photoUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=350&auto=format&fit=crop',
     tags: ['gradient', 'teal', 'soothing'],
@@ -74,19 +65,15 @@ const DESIGNER_FRAMES = [
     id: 'spring-designer-frame',
     name: 'Spring Designer Frame with Photo',
     price: 449,
-    compareAtPrice: 699,
-    discount: 35,
     themeId: 't-sage',
     photoUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=350&auto=format&fit=crop',
     tags: ['botanical', 'green', 'leafy'],
-    isCustomizable: true
+    isCustomizable: false
   },
   {
     id: 'blossom-designer-frame',
     name: 'Blossom Designer Frame with Photo',
     price: 449,
-    compareAtPrice: 699,
-    discount: 35,
     themeId: 't-kraft',
     photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=350&auto=format&fit=crop',
     tags: ['watercolor', 'vintage', 'floral'],
@@ -96,18 +83,19 @@ const DESIGNER_FRAMES = [
     id: 'velvety-designer-frame',
     name: 'Velvety Designer Frame with Photo',
     price: 449,
-    compareAtPrice: 699,
-    discount: 35,
     themeId: 't-walnut',
     photoUrl: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=350&auto=format&fit=crop',
     tags: ['velvet', 'luxury', 'wedding'],
-    isCustomizable: true
+    isCustomizable: false
   }
 ]
 
-export default function FramesListingPage() {
+function FramesListingPageContent() {
+  const searchParams = useSearchParams()
+  const initialFilter = searchParams.get('filter') as 'all' | 'customizable' | 'ready' || 'all'
+
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default')
-  const [filter, setFilter] = useState<'all' | 'customizable' | 'ready'>('all')
+  const [filter, setFilter] = useState<'all' | 'customizable' | 'ready'>(initialFilter)
 
   const wishlistItems = useWishlistStore((state) => state.items)
   const addItem = useWishlistStore((state) => state.addItem)
@@ -236,7 +224,7 @@ export default function FramesListingPage() {
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  {f === 'all' ? 'All' : f === 'customizable' ? '3D Custom' : 'Ready Made'}
+                  {f === 'all' ? 'All' : f === 'customizable' ? 'Design' : 'Ready Made'}
                 </button>
               ))}
             </div>
@@ -320,30 +308,25 @@ export default function FramesListingPage() {
                             <span className="text-sm font-bold text-slate-800 dark:text-white">
                               {formatPrice(frame.price)}
                             </span>
-                            {frame.compareAtPrice && (
-                              <span className="text-[11px] text-slate-400 line-through">
-                                {formatPrice(frame.compareAtPrice)}
-                              </span>
-                            )}
-                            {frame.discount && (
-                              <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded">
-                                {frame.discount}% OFF
-                              </span>
-                            )}
                           </div>
 
                           <div className="flex gap-2">
-                            <Link href={`/frame-designer?theme=${frame.themeId}`}>
-                              <Button size="sm" className="h-8 text-xs font-bold gap-1 bg-amber-500 hover:bg-amber-400 text-gray-900 rounded-full">
-                                Design
+                            {frame.isCustomizable ? (
+                              <Link href={`/personalized/${frame.id}?theme=${frame.themeId}`}>
+                                <Button size="sm" className="h-8 text-xs font-bold gap-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full">
+                                  Design
+                                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                </Button>
+                              </Link>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => handleAddToCart(frame)}
+                                className="h-8 text-xs font-bold gap-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full"
+                              >
+                                Order Now
                               </Button>
-                            </Link>
-                            <Link href={`/personalized/${frame.id}?theme=${frame.themeId}`}>
-                              <Button size="sm" className="h-8 text-xs font-bold gap-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full">
-                                3D Custom
-                                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                              </Button>
-                            </Link>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -374,5 +357,17 @@ export default function FramesListingPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function FramesListingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-950 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    }>
+      <FramesListingPageContent />
+    </Suspense>
   )
 }
