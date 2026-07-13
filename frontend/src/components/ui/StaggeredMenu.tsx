@@ -90,8 +90,8 @@ export const StaggeredMenu = ({
       preLayerElsRef.current = preLayers;
 
       const offscreen = position === "left" ? -100 : 100;
-      gsap.set([panel, ...preLayers], { xPercent: offscreen, opacity: 1 });
-      if (preContainer) gsap.set(preContainer, { xPercent: 0, opacity: 1 });
+      gsap.set([panel, ...preLayers], { xPercent: offscreen, opacity: 1, visibility: "hidden" });
+      if (preContainer) gsap.set(preContainer, { xPercent: 0, opacity: 1, visibility: "hidden" });
       gsap.set(plusH, { transformOrigin: "50% 50%", rotate: 0 });
       gsap.set(plusV, { transformOrigin: "50% 50%", rotate: 90 });
       gsap.set(icon, { rotate: 0, transformOrigin: "50% 50%" });
@@ -125,6 +125,11 @@ export const StaggeredMenu = ({
     if (socialLinks.length) gsap.set(socialLinks, { y: 25, opacity: 0 });
 
     const tl = gsap.timeline({ paused: true });
+
+    if (preLayersRef.current) {
+      tl.set(preLayersRef.current, { visibility: "visible" });
+    }
+    tl.set([panel, ...layers], { visibility: "visible" });
 
     layerStates.forEach((ls, i) => {
       tl.fromTo(ls.el, { xPercent: ls.start }, { xPercent: 0, duration: 0.5, ease: "power4.out" }, i * 0.07);
@@ -191,6 +196,11 @@ export const StaggeredMenu = ({
         const socialLinks = Array.from(panel.querySelectorAll<HTMLElement>(".sm-socials-link"));
         if (socialTitle) gsap.set(socialTitle, { opacity: 0 });
         if (socialLinks.length) gsap.set(socialLinks, { y: 25, opacity: 0 });
+        
+        gsap.set(all, { visibility: "hidden" });
+        if (preLayersRef.current) {
+          gsap.set(preLayersRef.current, { visibility: "hidden" });
+        }
         busyRef.current = false;
       },
     });

@@ -13,12 +13,13 @@
   }
 
   body {
-    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100;
+    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-x-clip;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   html {
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
 
   ::selection {
