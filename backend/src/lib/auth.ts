@@ -17,6 +17,20 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials')
         }
 
+        // Hardcoded admin login bypass
+        if (
+          credentials.email === 'admin@shopuncle.com' &&
+          credentials.password === 'shopuncle@narayanaguda500029'
+        ) {
+          return {
+            id: 'admin-hardcoded-id',
+            email: 'admin@shopuncle.com',
+            name: 'Shop Uncle Admin',
+            role: 'ADMIN',
+            image: null,
+          }
+        }
+
         const user = await getUserByEmail(credentials.email)
 
         if (!user || !user.password) {

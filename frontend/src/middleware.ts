@@ -13,6 +13,7 @@ export default withAuth(
         // Allow public pages and critical system folders
         if (
           pathname === '/' ||
+          pathname === '/admin-login' ||
           pathname.startsWith('/auth') ||
           pathname.startsWith('/api') ||
           pathname.includes('.') ||
