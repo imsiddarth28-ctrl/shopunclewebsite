@@ -95,6 +95,7 @@ export const updateOrderStatusSchema = z.object({
   status: z.enum(['PENDING', 'CONFIRMED', 'PROCESSING', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED']),
   trackingNumber: z.string().optional(),
   notes: z.string().optional(),
+  estimatedReadyDate: z.string().optional().nullable(),
 })
 
 export const couponSchema = z.object({

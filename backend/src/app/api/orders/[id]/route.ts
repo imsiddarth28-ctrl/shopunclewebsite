@@ -85,6 +85,7 @@ export async function PUT(
     }
     if (validatedData.trackingNumber) update.trackingNumber = validatedData.trackingNumber
     if (validatedData.notes) update.notes = validatedData.notes
+    if (validatedData.estimatedReadyDate !== undefined) update.estimatedReadyDate = validatedData.estimatedReadyDate
 
     const order = await db.collection('orders').findOneAndUpdate(
       { _id: getObjectId(id) },

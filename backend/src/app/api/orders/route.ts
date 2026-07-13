@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       if (notes) {
         messageText += `Notes: ${notes}\n`
       }
-      messageText += `\nItems:\n${itemListText}\n\nTotal: ₹${totalAmount}\nVerification OTP: ${otp}\n\nPlease confirm my order.`
+      messageText += `\nItems:\n${itemListText}\n\nTotal: ₹${totalAmount}\nVerification OTP: ${otp}\n\n📸 Please attach and send the photo you want printed in this chat.\n\nPlease confirm my order.`
 
       const shopOwnerNumber = process.env.SHOP_OWNER_NUMBER || '919876543210'
       const whatsappLink = `https://wa.me/${shopOwnerNumber}?text=${encodeURIComponent(messageText)}`

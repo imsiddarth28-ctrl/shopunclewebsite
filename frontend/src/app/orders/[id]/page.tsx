@@ -133,7 +133,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Order Placed Successfully!</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-              Thank you for shopping with Sree Balaji Frames and Gifts. We have sent a confirmation email to {order.shippingAddress.email || session?.user?.email}.
+              Thank you for shopping with Sree Balaji Frames and Gifts. We have sent a confirmation email to {order.shippingAddress?.email || session?.user?.email || 'your email'}.
             </p>
           </div>
         )}
@@ -162,6 +162,20 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           </div>
         </div>
 
+        {order.estimatedReadyDate && (
+          <div className="mb-8 p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-4 text-left">
+            <div className="w-10 h-10 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900 dark:text-white text-base">Estimated Ready Date</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Your order is expected to be ready by <span className="font-bold text-amber-600 dark:text-amber-400">{formatDate(order.estimatedReadyDate)}</span>. We will update you once it is ready!
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
           {/* Order Details Column */}
@@ -183,7 +197,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                         </div>
                       )}
                       <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">{item.productId?.name || 'Frame Product'}</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{item.name || item.productId?.name || 'Frame Product'}</h4>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {item.size && `Size: ${item.size}`} {item.material && `| Material: ${item.material}`}
                         </p>
@@ -222,26 +236,47 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-400" /> {order.shippingAddress.name}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-gray-400" /> {order.shippingAddress.phone}
-                    </p>
-                    {order.shippingAddress.email && (
-                      <p className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-gray-400" /> {order.shippingAddress.email}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-900 dark:text-white">Delivery Address</p>
-                    <p>{order.shippingAddress.addressLine1}</p>
-                    {order.shippingAddress.addressLine2 && <p>{order.shippingAddress.addressLine2}</p>}
-                    <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
-                    <p>{order.shippingAddress.country}</p>
-                  </div>
+                  {order.shippingAddress ? (
+                    <>
+                      <div className="space-y-1">
+                        <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-400" /> {order.shippingAddress.name}
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-gray-400" /> {order.shippingAddress.phone}
+                        </p>
+                        {order.shippingAddress.email && (
+                          <p className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-gray-400" /> {order.shippingAddress.email}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-medium text-gray-900 dark:text-white">Delivery Address</p>
+                        <p>{order.shippingAddress.addressLine1}</p>
+                        {order.shippingAddress.addressLine2 && <p>{order.shippingAddress.addressLine2}</p>}
+                        <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
+                        <p>{order.shippingAddress.country}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-400" /> {order.customerName || 'Guest'}
+                        </p>
+                        {order.customerPhone && (
+                          <p className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-gray-400" /> {order.customerPhone}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-medium text-gray-900 dark:text-white">Delivery Address</p>
+                        <p className="whitespace-pre-line">{order.address || 'No address provided'}</p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>

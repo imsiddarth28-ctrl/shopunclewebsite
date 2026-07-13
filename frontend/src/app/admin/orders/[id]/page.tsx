@@ -36,6 +36,8 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
   const [requestingAccess, setRequestingAccess] = useState<string | null>(null) // imageId being requested
   const [secureImageUrl, setSecureImageUrl] = useState<string | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState('')
+  const [estimatedReadyDate, setEstimatedReadyDate] = useState('')
 
   const fetchOrder = async () => {
     try {
@@ -46,6 +48,12 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
       }
       const data = await res.json()
       setOrder(data)
+      setSelectedStatus(data.status)
+      if (data.estimatedReadyDate) {
+        setEstimatedReadyDate(new Date(data.estimatedReadyDate).toISOString().split('T')[0])
+      } else {
+        setEstimatedReadyDate('')
+      }
     } catch (error) {
       console.error(error)
       toast.error('Error fetching order details')
@@ -58,21 +66,25 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
     fetchOrder()
   }, [id])
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleUpdateOrder = async () => {
     try {
       setUpdatingStatus(true)
       const res = await fetch(`/api/orders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ 
+          status: selectedStatus, 
+          estimatedReadyDate: estimatedReadyDate || null 
+        }),
       })
       if (!res.ok) {
-        throw new Error('Failed to update status')
+        throw new Error('Failed to update order details')
       }
+      toast.success('Order updated successfully')
       await fetchOrder()
     } catch (error) {
       console.error(error)
-      toast.error('Failed to update order status')
+      toast.error('Failed to update order details')
     } finally {
       setUpdatingStatus(false)
     }
@@ -132,24 +144,55 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <Link href="/admin/orders">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Orders
           </Button>
         </Link>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Status Management:</span>
-          <select 
-            value={order.status}
-            onChange={(e) => handleStatusChange(e.target.value)}
+        
+        {/* Status & Date Manager */}
+        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-gray-900 p-3 rounded-2xl border dark:border-gray-800 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase">Status:</span>
+            <select 
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              disabled={updatingStatus}
+              className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              {Object.keys(statusConfig).map((status) => (
+                <option key={status} value={status}>{statusConfig[status as keyof typeof statusConfig].label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase">Ready Date:</span>
+            <input 
+              type="date"
+              value={estimatedReadyDate}
+              onChange={(e) => setEstimatedReadyDate(e.target.value)}
+              disabled={updatingStatus}
+              className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          <Button 
+            size="sm"
+            onClick={handleUpdateOrder}
             disabled={updatingStatus}
-            className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="flex items-center gap-1.5"
           >
-            {Object.keys(statusConfig).map((status) => (
-              <option key={status} value={status}>{statusConfig[status as keyof typeof statusConfig].label}</option>
-            ))}
-          </select>
+            {updatingStatus ? (
+              <>
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                Updating...
+              </>
+            ) : (
+              'Update Status & Date'
+            )}
+          </Button>
         </div>
       </div>
 
@@ -168,6 +211,11 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 flex items-center gap-1">
             <Calendar className="w-4 h-4" /> Ordered on {formatDate(order.createdAt)}
           </p>
+          {order.estimatedReadyDate && (
+            <p className="text-amber-600 dark:text-amber-400 text-sm mt-1 flex items-center gap-1 font-semibold">
+              <Clock className="w-4 h-4 animate-pulse text-amber-500" /> Ready by: {formatDate(order.estimatedReadyDate)}
+            </p>
+          )}
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount</p>

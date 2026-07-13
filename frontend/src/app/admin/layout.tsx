@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
+import { ThemeToggle } from '@/components/theme-toggle'
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Settings, 
   BarChart, LogOut, Menu, X, ChevronDown, Bell, Search,
@@ -148,6 +149,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
 
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <div className="relative hidden sm:block">
                 <button className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
                   <Bell className="w-5 h-5" />

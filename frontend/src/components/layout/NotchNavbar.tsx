@@ -71,7 +71,18 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
     setMounted(true);
     const fn = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
+
+    const handleHashChange = () => {
+      if (window.location.hash === "#signout") {
+        signOut({ callbackUrl: "/" });
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+
+    return () => {
+      window.removeEventListener("scroll", fn);
+      window.removeEventListener("hashchange", handleHashChange);
+    };
   }, []);
 
   return (
@@ -270,7 +281,37 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
         <StaggeredMenu
           isFixed
           position="right"
-          items={staggeredItems}
+          items={(() => {
+            const dynamicMobileItems = [
+              { label: "Home",          ariaLabel: "Go to home page",       link: "/" },
+              { label: "Frames",        ariaLabel: "Browse photo frames",   link: "/frames" },
+              { label: "Products",      ariaLabel: "Browse all products",   link: "/products" },
+              { label: "Categories",    ariaLabel: "All categories",        link: "/categories" },
+              { label: "Vintage Strip", ariaLabel: "Make a vintage strip",  link: "/vintage-strip" },
+              { label: "Wishlist",      ariaLabel: "My wishlist",           link: "/wishlist" },
+              { label: "Track Order",   ariaLabel: "Track your order",      link: "/track-order" },
+              { label: "Contact",       ariaLabel: "Contact us",            link: "/contact" },
+            ];
+
+            if (mounted) {
+              if (session) {
+                dynamicMobileItems.push(
+                  { label: "My Account", ariaLabel: "My Account", link: "/account" },
+                  { label: "My Orders", ariaLabel: "My Orders", link: "/account/orders" }
+                );
+                if (session.user?.role === "ADMIN") {
+                  dynamicMobileItems.push({ label: "Admin Dashboard", ariaLabel: "Admin Dashboard", link: "/admin" });
+                }
+                dynamicMobileItems.push({ label: "Sign Out", ariaLabel: "Sign Out", link: "#signout" });
+              } else {
+                dynamicMobileItems.push(
+                  { label: "Sign In", ariaLabel: "Sign In", link: "/auth/signin" },
+                  { label: "Sign Up", ariaLabel: "Sign Up", link: "/auth/signup" }
+                );
+              }
+            }
+            return dynamicMobileItems;
+          })()}
           socialItems={staggeredSocials}
           displaySocials
           displayItemNumbering
