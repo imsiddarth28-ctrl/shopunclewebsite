@@ -2,179 +2,211 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { orderSchema, type OrderInput } from '@/lib/validations'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { formatPrice, cn } from '@/lib/utils'
+import { formatPrice } from '@/lib/utils'
 import { useCartStore } from '@/store/cart'
-import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { 
-  CreditCard, Truck, Shield, User, Mail, MapPin, 
-  Phone, Lock, CheckCircle, ArrowRight, ArrowLeft,
-  ChevronDown, ChevronUp, RotateCcw, ShoppingCart, Gift, ClipboardCheck, ClipboardCheck as ClipboardCheckIcon,
-  ChevronLeft, ChevronRight
+  ShoppingCart, Gift, ArrowLeft, CheckCircle2, 
+  Copy, Phone, MapPin, NotepadText, Send, Check
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const shippingCost = 99
-const freeShippingThreshold = 999
-
-const paymentMethods = [
-  { id: 'razorpay', name: 'Razorpay', description: 'UPI, Cards, Net Banking, Wallets', icon: CreditCard },
-  { id: 'stripe', name: 'Stripe', description: 'International Cards, Apple Pay, Google Pay', icon: CreditCard },
-  { id: 'cod', name: 'Cash on Delivery', description: 'Pay when you receive your order', icon: Truck },
-]
-
-const steps = [
-  { number: 1, title: 'Shipping', description: 'Delivery address' },
-  { number: 2, title: 'Payment', description: 'Choose payment method' },
-  { number: 3, title: 'Review', description: 'Confirm your order' },
-]
-
 export default function CheckoutPage() {
   const router = useRouter()
-  const { data: session } = useSession()
-  const { items, getSubtotal, getItemCount, getStandardItems, getPersonalizedItems } = useCartStore()
+  const { items, getSubtotal, getItemCount, clearCart } = useCartStore()
+
+  // Form states
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [notes, setNotes] = useState('')
   
-  const [step, setStep] = useState(1)
-  const [selectedPayment, setSelectedPayment] = useState<'razorpay' | 'stripe' | 'cod'>('razorpay')
-  const [shippingAddress, setShippingAddress] = useState<any>(null)
-  const [sameAsShipping, setSameAsShipping] = useState(true)
+  // App states
   const [isProcessing, setIsProcessing] = useState(false)
-  const [showAddressForm, setShowAddressForm] = useState(false)
+  const [orderResult, setOrderResult] = useState<{ orderId: string; otp: string; whatsappLink: string } | null>(null)
+  const [copiedOrderId, setCopiedOrderId] = useState(false)
+  const [copiedOtp, setCopiedOtp] = useState(false)
 
   const subtotal = getSubtotal()
-  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingCost
+  const shipping = subtotal >= 999 ? 0 : 99
   const total = subtotal + shipping
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<OrderInput>({
-    resolver: zodResolver(orderSchema),
-    defaultValues: {
-      items: items.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        frameOptionId: item.frameOptionId,
-        customizationData: item.customizationData,
-        previewImage: item.previewImage,
-      })),
-      shippingAddress: session?.user ? {
-        name: session.user.name || '',
-        phone: '',
-        addressLine1: '',
-        addressLine2: '',
-        city: '',
-        state: '',
-        postalCode: '',
-        country: 'India',
-      } : {
-        name: '',
-        phone: '',
-        addressLine1: '',
-        addressLine2: '',
-        city: '',
-        state: '',
-        postalCode: '',
-        country: 'India',
-      },
-      billingAddress: {
-        name: '',
-        phone: '',
-        addressLine1: '',
-        addressLine2: '',
-        city: '',
-        state: '',
-        postalCode: '',
-        country: 'India',
-      },
-      paymentMethod: 'razorpay',
-      couponCode: '',
-      notes: '',
-    },
-  })
-
+  // Clear states when component unmounts
   useEffect(() => {
-    setValue('items', items.map(item => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      frameOptionId: item.frameOptionId,
-      customizationData: item.customizationData,
-      previewImage: item.previewImage,
-    })))
-  }, [items, setValue])
+    return () => {
+      setOrderResult(null)
+    }
+  }, [])
 
-  const onSubmit = async (data: OrderInput) => {
-    if (!session?.user) {
-      router.push('/auth/signin?callbackUrl=/checkout')
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!fullName.trim() || !phone.trim() || !address.trim()) {
+      toast.error('Please fill in all required fields.')
       return
     }
 
     setIsProcessing(true)
-    
+
     try {
+      // Compile order items format
+      const orderItems = items.map(item => {
+        const customDetails = [
+          item.size ? `Size: ${item.size}` : '',
+          item.material ? `Mat: ${item.material}` : ''
+        ].filter(Boolean).join(', ')
+
+        return {
+          name: item.name + (customDetails ? ` (${customDetails})` : ''),
+          qty: item.quantity,
+          price: item.price
+        }
+      })
+
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...data,
-          items: items.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            frameOptionId: item.frameOptionId,
-            customizationData: item.customizationData,
-            previewImage: item.previewImage,
-          })),
-        }),
+          customerName: fullName,
+          customerPhone: phone,
+          items: orderItems,
+          address,
+          notes
+        })
       })
 
       const result = await response.json()
-      
+
       if (response.ok) {
-        const orderId = result.order._id || result.order.id
-        router.push(`/orders/${orderId}?success=true`)
+        setOrderResult({
+          orderId: result.orderId,
+          otp: result.otp,
+          whatsappLink: result.whatsappLink
+        })
+        
+        toast.success('Order placed! Redirecting to WhatsApp...')
+        clearCart() // Clear the shopping cart since order has been created
+
+        // Attempt to open the WhatsApp link in a new tab immediately
+        try {
+          const newTab = window.open(result.whatsappLink, '_blank')
+          if (!newTab) {
+            toast.success('WhatsApp link generated. Please click the button below to send.')
+          }
+        } catch (popupError) {
+          console.warn('Failed to auto-open WhatsApp tab:', popupError)
+        }
       } else {
-        toast.error(result.error || 'Failed to place order')
+        toast.error(result.error || 'Failed to place order.')
       }
-    } catch (error) {
-      toast.error('Something went wrong. Please try again.')
+    } catch (err) {
+      console.error(err)
+      toast.error('An error occurred. Please try again.')
     } finally {
       setIsProcessing(false)
     }
   }
 
-  if (items.length === 0) {
+  const handleCopy = (text: string, type: 'order' | 'otp') => {
+    navigator.clipboard.writeText(text)
+    if (type === 'order') {
+      setCopiedOrderId(true)
+      setTimeout(() => setCopiedOrderId(false), 2000)
+    } else {
+      setCopiedOtp(true)
+      setTimeout(() => setCopiedOtp(false), 2000)
+    }
+    toast.success('Copied to clipboard!')
+  }
+
+  // Render Checkout Success Screen
+  if (orderResult) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <Card className="max-w-md w-full text-center p-12">
-          <CardContent className="pt-6">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-              <ShoppingCart className="w-10 h-10 text-primary-600 dark:text-primary-400" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-20 flex items-center justify-center px-4">
+        <Card className="max-w-xl w-full border border-green-200 dark:border-green-950 shadow-xl overflow-hidden rounded-2xl">
+          {/* Decorative Header */}
+          <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-8 text-center text-white relative">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30 backdrop-blur-md">
+              <CheckCircle2 className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Cart is Empty</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
-              Add some items to your cart before checking out.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/personalized">
-                <Button size="lg" className="w-full sm:w-auto">
-                  <Gift className="w-5 h-5 mr-2" />
-                  Create Personalized Gift
+            <h2 className="text-2xl font-bold">Order Received!</h2>
+            <p className="text-emerald-100 mt-1 text-sm">Follow the step below to manually confirm your order.</p>
+          </div>
+
+          <CardContent className="p-8 space-y-6">
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-100 dark:border-yellow-900/30 rounded-xl text-center">
+              <p className="text-sm text-yellow-800 dark:text-yellow-400 font-medium">
+                ⚠️ IMPORTANT: Save the credentials below to check your order status later. They are required since we do not use accounts.
+              </p>
+            </div>
+
+            {/* Credentials Card */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-xl p-4 relative group border dark:border-gray-800">
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mb-1">Order ID</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-gray-900 dark:text-white text-lg">{orderResult.orderId}</span>
+                  <button 
+                    onClick={() => handleCopy(orderResult.orderId, 'order')}
+                    className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors"
+                  >
+                    {copiedOrderId ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-xl p-4 relative group border dark:border-gray-800">
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mb-1">Verification OTP</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-lg tracking-wider">{orderResult.otp}</span>
+                  <button 
+                    onClick={() => handleCopy(orderResult.otp, 'otp')}
+                    className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors"
+                  >
+                    {copiedOtp ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Section */}
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Your order is currently in <Badge variant="warning">pending</Badge> status.
+                To complete your order, click the button below to send your invoice and verification code on WhatsApp:
+              </p>
+
+              <a 
+                href={orderResult.whatsappLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block w-full"
+              >
+                <Button size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 transition-all">
+                  <Phone className="w-5 h-5" />
+                  Send Order via WhatsApp
+                  <Send className="w-4 h-4" />
+                </Button>
+              </a>
+              
+              <p className="text-xs text-gray-400">
+                If the WhatsApp tab did not open automatically, click the button above.
+              </p>
+            </div>
+
+            <div className="border-t dark:border-gray-800 pt-6 flex justify-between">
+              <Link href="/track-order">
+                <Button variant="outline" size="sm">
+                  Track Order Status
                 </Button>
               </Link>
               <Link href="/frames">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  Browse Ready Frames
+                <Button variant="ghost" size="sm">
+                  Continue Shopping
                 </Button>
               </Link>
             </div>
@@ -184,281 +216,211 @@ export default function CheckoutPage() {
     )
   }
 
-  const standardItems = getStandardItems()
-  const personalizedItems = getPersonalizedItems()
+  // Render empty cart state
+  if (items.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <Card className="max-w-md w-full text-center p-12 rounded-2xl border dark:border-gray-800">
+          <CardContent className="pt-6">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+              <ShoppingCart className="w-10 h-10 text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Cart is Empty</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-8">
+              Add products or designs to your cart before proceeding to checkout.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/personalized">
+                <Button size="lg" className="w-full sm:w-auto">
+                  <Gift className="w-5 h-5 mr-2" />
+                  Personalized Gifts
+                </Button>
+              </Link>
+              <Link href="/frames">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  Browse Frames
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="heading-2 text-gray-900 dark:text-white">Checkout</h1>
-          <p className="body text-gray-600 dark:text-gray-400 mt-1">
-            {items.length} item{items.length !== 1 ? 's' : ''} in your cart
-          </p>
-        </div>
-
-        <div className="mb-8">
-          <div className="relative flex justify-between">
-            {steps.map((s, index) => (
-              <div key={s.number} className="flex flex-col items-center">
-                <div className={cn(
-                  'w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all',
-                  step > index ? 'bg-primary-600 text-white' : 
-                  step === index + 1 ? 'bg-primary-600 text-white ring-4 ring-primary-200 dark:ring-primary-900' :
-                  'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                )}>
-                  {step > index ? <CheckCircle className="w-6 h-6" /> : s.number}
-                </div>
-                <div className="mt-2 text-center">
-                  <p className={cn('font-medium text-sm', step >= index + 1 ? 'text-gray-900 dark:text-white' : 'text-gray-500')}>
-                    {s.title}
-                  </p>
-                  <p className="text-xs text-gray-500">{s.description}</p>
-                </div>
-              </div>
-            ))}
+        <div className="mb-8 flex items-center gap-4">
+          <Link href="/cart">
+            <button className="p-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl border dark:border-gray-800 transition-colors">
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Manual Checkout</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Confirm details and send your order to the shop owner on WhatsApp.
+            </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit}>
           <div className="grid lg:grid-cols-3 gap-8">
+            {/* Input Details */}
             <div className="lg:col-span-2 space-y-6">
-              {step === 1 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Truck className="w-5 h-5" />
-                      Shipping Address
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    {session?.user && shippingAddress && !showAddressForm ? (
-                      <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl mb-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium">{shippingAddress.name}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{shippingAddress.phone}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                              {shippingAddress.addressLine1}
-                              {shippingAddress.addressLine2 && `, ${shippingAddress.addressLine2}`}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {shippingAddress.city}, {shippingAddress.state} - {shippingAddress.postalCode}
-                            </p>
-                          </div>
-                          <Button variant="ghost" size="sm" type="button" onClick={() => setShowAddressForm(true)}>
-                            Change
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          <Input {...register('shippingAddress.name')} label="Full Name" error={errors.shippingAddress?.name?.message} placeholder="John Doe" />
-                          <Input {...register('shippingAddress.phone')} label="Phone Number" error={errors.shippingAddress?.phone?.message} placeholder="9876543210" type="tel" />
-                        </div>
-                        <Input {...register('shippingAddress.addressLine1')} label="Address Line 1" error={errors.shippingAddress?.addressLine1?.message} placeholder="House No., Building, Street" />
-                        <Input {...register('shippingAddress.addressLine2')} label="Address Line 2 (Optional)" placeholder="Landmark, Area" />
-                        <div className="grid sm:grid-cols-3 gap-4">
-                          <Input {...register('shippingAddress.city')} label="City" error={errors.shippingAddress?.city?.message} placeholder="Mumbai" />
-                          <Input {...register('shippingAddress.state')} label="State" error={errors.shippingAddress?.state?.message} placeholder="Maharashtra" />
-                          <Input {...register('shippingAddress.postalCode')} label="PIN Code" error={errors.shippingAddress?.postalCode?.message} placeholder="400001" />
-                        </div>
-                        <Input {...register('shippingAddress.country')} label="Country" defaultValue="India" disabled />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {step === 2 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CreditCard className="w-5 h-5" />
-                      Payment Method
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {paymentMethods.map((method) => (
-                        <label
-                          key={method.id}
-                          className={cn(
-                            'relative flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all',
-                            selectedPayment === method.id
-                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
-                          )}
-                        >
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value={method.id}
-                            checked={selectedPayment === method.id}
-                            onChange={(e) => {
-                              const value = e.target.value as 'razorpay' | 'stripe' | 'cod'
-                              setSelectedPayment(value)
-                              setValue('paymentMethod', value)
-                            }}
-                            className="sr-only"
-                          />
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-                              <method.icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-900 dark:text-white">{method.name}</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{method.description}</p>
-                            </div>
-                            <div className={cn(
-                              'w-6 h-6 rounded-full border-2 flex items-center justify-center',
-                              selectedPayment === method.id
-                                ? 'border-primary-500 bg-primary-500'
-                                : 'border-gray-300 dark:border-gray-600'
-                            )}>
-                              {selectedPayment === method.id && (
-                                <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                              )}
-                            </div>
-                          </div>
-                        </label>
-                      ))}
+              <Card className="rounded-2xl border dark:border-gray-800 overflow-hidden shadow-sm">
+                <CardHeader className="bg-gray-50 dark:bg-gray-900/50 border-b dark:border-gray-800">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-emerald-500" />
+                    Customer & Shipping Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <Input 
+                        placeholder="e.g. John Doe" 
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        required
+                        className="py-3 px-4 rounded-xl border dark:border-gray-800 bg-white dark:bg-gray-900"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        WhatsApp Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <Input 
+                        placeholder="e.g. 9876543210" 
+                        type="tel"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        required
+                        className="py-3 px-4 rounded-xl border dark:border-gray-800 bg-white dark:bg-gray-900"
+                      />
+                    </div>
+                  </div>
 
-              {step === 3 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ClipboardCheckIcon className="w-5 h-5" />
-                      Review & Confirm
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-4">
-                      <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                        <p className="font-medium mb-2">Shipping Address</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {watch('shippingAddress.name')}<br />
-                          {watch('shippingAddress.phone')}<br />
-                          {watch('shippingAddress.addressLine1')}
-                          {watch('shippingAddress.addressLine2') && `, ${watch('shippingAddress.addressLine2')}`}<br />
-                          {watch('shippingAddress.city')}, {watch('shippingAddress.state')} - {watch('shippingAddress.postalCode')}
-                        </p>
-                      </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Shipping / Delivery Address <span className="text-red-500">*</span>
+                    </label>
+                    <textarea 
+                      placeholder="Enter house no., building, street, city, state, pincode"
+                      value={address}
+                      onChange={e => setAddress(e.target.value)}
+                      required
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 text-sm"
+                    />
+                  </div>
 
-                      <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                        <p className="font-medium mb-2">Payment Method</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                          {paymentMethods.find(m => m.id === watch('paymentMethod'))?.name}
-                        </p>
-                      </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1">
+                      <NotepadText className="w-4 h-4 text-gray-400" />
+                      Order Notes (Optional)
+                    </label>
+                    <textarea 
+                      placeholder="Add any specific instructions for framing, custom message, etc."
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      rows={2}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 text-sm"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-                      <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                        <p className="font-medium mb-2">Items ({getItemCount()})</p>
-                        <div className="space-y-2 text-sm">
-                          {personalizedItems.map(item => (
-                            <div key={item.id} className="flex justify-between">
-                              <span className="truncate pr-2">{item.name} × {item.quantity}</span>
-                              <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
-                            </div>
-                          ))}
-                          {standardItems.map(item => (
-                            <div key={item.id} className="flex justify-between">
-                              <span className="truncate pr-2">{item.name} × {item.quantity}</span>
-                              <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
-                            </div>
-                          ))}
+              {/* Items Card */}
+              <Card className="rounded-2xl border dark:border-gray-800 overflow-hidden shadow-sm">
+                <CardHeader className="bg-gray-50 dark:bg-gray-900/50 border-b dark:border-gray-800">
+                  <CardTitle className="text-lg font-bold">Review Items</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y dark:divide-gray-800">
+                    {items.map((item) => (
+                      <div key={item.id} className="p-4 flex items-center gap-4">
+                        <img 
+                          src={item.image} 
+                          alt={item.name} 
+                          className="w-16 h-16 rounded-xl object-cover border dark:border-gray-800 bg-gray-50"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-950 dark:text-white truncate text-sm">{item.name}</h4>
+                          <div className="flex gap-2 mt-1">
+                            {item.size && (
+                              <Badge variant="default" className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5">
+                                Size: {item.size}
+                              </Badge>
+                            )}
+                            {item.material && (
+                              <Badge variant="default" className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5">
+                                Material: {item.material}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Qty: {item.quantity} × {formatPrice(item.price)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-950 dark:text-white text-sm">
+                            {formatPrice(item.price * item.quantity)}
+                          </p>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
+            {/* Sidebar Summary */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
-                <Card className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-900/10 border-primary-200 dark:border-primary-800">
-                  <CardHeader>
-                    <CardTitle className="text-gray-900 dark:text-white">Order Summary</CardTitle>
+                <Card className="rounded-2xl border border-primary-200 dark:border-primary-950 bg-gradient-to-br from-primary-50/50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-950/5 overflow-hidden shadow-sm">
+                  <CardHeader className="border-b border-primary-100 dark:border-primary-950/50 py-4">
+                    <CardTitle className="text-base font-bold text-gray-950 dark:text-white">Order Summary</CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-gray-300">Subtotal ({getItemCount()} items)</span>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex justify-between">
+                        <span>Items Subtotal</span>
                         <span className="font-medium text-gray-900 dark:text-white">{formatPrice(subtotal)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-gray-300">Shipping</span>
-                        <span className="font-medium">
-                          {shipping === 0 ? (
-                            <span className="text-green-600 dark:text-green-400">FREE</span>
-                          ) : (
-                            formatPrice(shipping)
-                          )}
+                      <div className="flex justify-between">
+                        <span>Delivery Fee</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {shipping === 0 ? <span className="text-emerald-600 dark:text-emerald-400">FREE</span> : formatPrice(shipping)}
                         </span>
                       </div>
-                      <div className="border-t dark:border-gray-700 pt-3 flex justify-between text-lg font-bold text-gray-900 dark:text-white">
-                        <span>Total</span>
+                      <div className="border-t dark:border-gray-800 pt-3 flex justify-between text-base font-extrabold text-gray-950 dark:text-white">
+                        <span>Total Price</span>
                         <span>{formatPrice(total)}</span>
                       </div>
                     </div>
 
-                    {shipping > 0 && subtotal < freeShippingThreshold && (
-                      <div className="p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 text-center text-sm text-primary-600 dark:text-primary-400">
-                        Add {formatPrice(freeShippingThreshold - subtotal)} more for FREE shipping!
-                      </div>
-                    )}
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3.5 rounded-xl shadow-lg transition-all"
+                      disabled={isProcessing}
+                      isLoading={isProcessing}
+                    >
+                      Place WhatsApp Order
+                    </Button>
 
-                    <div className="pt-4 border-t dark:border-gray-700 grid grid-cols-3 gap-2 text-center">
-                      <div className="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                        <Shield className="w-4 h-4 mx-auto text-primary-600 dark:text-primary-400 mb-1" />
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Secure</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                        <Truck className="w-4 h-4 mx-auto text-blue-500 mb-1" />
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Fast Delivery</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                        <RotateCcw className="w-4 h-4 mx-auto text-purple-500 mb-1" />
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Easy Returns</p>
-                      </div>
+                    <div className="text-[11px] text-center text-gray-400 space-y-1">
+                      <p>
+                        Manual confirmation. No advance online payment required!
+                      </p>
+                      <p>
+                        By continuing, you agree to submit details to WhatsApp chat.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
-
-
-
-                <div className="flex gap-3">
-                  {step > 1 && (
-                    <Button variant="outline" type="button" onClick={() => setStep(step - 1)} className="flex-1">
-                      <ChevronLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </Button>
-                  )}
-                  {step < 3 ? (
-                    <Button type="button" onClick={() => setStep(step + 1)} className="flex-1" disabled={isProcessing}>
-                      Next
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  ) : (
-                    <Button type="submit" className="flex-1" size="lg" disabled={isProcessing} isLoading={isProcessing}>
-                      Place Order
-                      <Lock className="w-5 h-5 ml-2" />
-                    </Button>
-                  )}
-                </div>
-
-                <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                  By placing this order, you agree to our{' '}
-                  <a href="/terms" className="underline hover:text-primary-600">Terms of Service</a>{' '}
-                  and{' '}
-                  <a href="/privacy" className="underline hover:text-primary-600">Privacy Policy</a>.
-                </p>
               </div>
             </div>
           </div>

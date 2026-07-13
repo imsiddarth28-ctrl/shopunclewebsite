@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { connectToDatabase } from '@/lib/mongodb'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/customers — admin only
 export async function GET(request: NextRequest) {
   try {

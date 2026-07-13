@@ -8,9 +8,23 @@ import { orderSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const authHeader = request.headers.get('x-shop-owner-key')
+    const isValidApiKey = authHeader && authHeader === process.env.SHOP_OWNER_KEY
+
+    let isAdmin = false
+    let userIdFilter: any = null
+
+    if (isValidApiKey) {
+      isAdmin = true
+    } else {
+      const session = await getServerSession(authOptions)
+      if (!session?.user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      isAdmin = session.user.role === 'ADMIN'
+      if (!isAdmin) {
+        userIdFilter = getObjectId(session.user.id)
+      }
     }
 
     const { searchParams } = new URL(request.url)
@@ -21,8 +35,8 @@ export async function GET(request: NextRequest) {
     const { db } = await connectToDatabase()
     
     const filter: any = {}
-    if (session.user.role !== 'ADMIN') {
-      filter.userId = getObjectId(session.user.id)
+    if (userIdFilter) {
+      filter.userId = userIdFilter
     }
     if (status) filter.status = status
 
@@ -39,12 +53,19 @@ export async function GET(request: NextRequest) {
     ])
 
     // Populate user details for admin dashboard
-    if (session.user.role === 'ADMIN') {
-      const userIds = orders.map(o => o.userId)
+    if (isAdmin) {
+      const userIds = orders.map(o => o.userId).filter(Boolean)
       const users = await db.collection('users').find({ _id: { $in: userIds } }).toArray()
       const userMap = new Map(users.map(u => [u._id.toString(), u]))
       orders.forEach(o => {
-        o.user = userMap.get(o.userId.toString())
+        if (o.userId) {
+          o.user = userMap.get(o.userId.toString())
+        } else if (o.customerName) {
+          o.user = {
+            name: o.customerName,
+            phone: o.customerPhone
+          }
+        }
       })
     }
 
@@ -65,12 +86,81 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json()
+
+    // 1. Detect if it's a WhatsApp click-to-chat guest order
+    if (body && body.customerName && body.customerPhone) {
+      const { customerName, customerPhone, items, address, notes } = body
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return NextResponse.json({ error: 'Items array is required' }, { status: 400 })
+      }
+
+      // Calculate totalAmount from items
+      const totalAmount = items.reduce((sum: number, item: any) => sum + (item.qty * item.price), 0)
+
+      // Generate a unique human-readable orderId (e.g. ORD-7F3K29)
+      const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      let randomPart = ''
+      for (let i = 0; i < 6; i++) {
+        randomPart += chars[Math.floor(Math.random() * chars.length)]
+      }
+      const orderId = `ORD-${randomPart}`
+
+      // Generate a 6-digit numeric OTP
+      // Note: This OTP is not a login credential. It binds the WhatsApp message to the correct order
+      // when updating status, and allows the customer to look up their order details without an account.
+      const otp = Math.floor(100000 + Math.random() * 900000).toString()
+
+      const { db } = await connectToDatabase()
+
+      const orderDoc = {
+        orderId,
+        orderNumber: orderId, // Uniformity with existing schema
+        customerName,
+        customerPhone,
+        address: address || '',
+        notes: notes || '',
+        items: items.map((item: any) => ({
+          name: item.name,
+          quantity: item.qty,
+          unitPrice: item.price,
+          totalPrice: item.qty * item.price,
+        })),
+        totalAmount,
+        total: totalAmount, // Uniformity with existing schema
+        status: 'pending',
+        otp,
+        shopOwnerNote: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      await db.collection('orders').insertOne(orderDoc)
+
+      // Build WhatsApp message text
+      const itemListText = items.map((item: any) => `- ${item.name} x ${item.qty} (₹${item.price})`).join('\n')
+      let messageText = `Hi, I would like to place an order:\nOrder ID: ${orderId}\nCustomer: ${customerName}\nPhone: ${customerPhone}\nDelivery Address: ${address || 'N/A'}\n`
+      if (notes) {
+        messageText += `Notes: ${notes}\n`
+      }
+      messageText += `\nItems:\n${itemListText}\n\nTotal: ₹${totalAmount}\nVerification OTP: ${otp}\n\nPlease confirm my order.`
+
+      const shopOwnerNumber = process.env.SHOP_OWNER_NUMBER || '919876543210'
+      const whatsappLink = `https://wa.me/${shopOwnerNumber}?text=${encodeURIComponent(messageText)}`
+
+      return NextResponse.json({
+        orderId,
+        otp,
+        whatsappLink
+      }, { status: 201 })
+    }
+
+    // 2. Otherwise fallback to the normal logged-in user checkout
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
     const validatedData = orderSchema.parse(body)
 
     const { db } = await connectToDatabase()
@@ -82,6 +172,7 @@ export async function POST(request: NextRequest) {
       .toArray()
     
     const productMap = new Map(products.map(p => [p._id.toString(), p]))
+
 
     const frameOptionIds = validatedData.items
       .filter(item => item.frameOptionId)

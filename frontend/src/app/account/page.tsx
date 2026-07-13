@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
-import { Calendar, Mail, Shield, User } from 'lucide-react'
+import { Calendar, Mail, Shield, User, Phone } from 'lucide-react'
 
 export default async function AccountPage() {
   const session = await getServerSession(authOptions)
@@ -58,6 +58,18 @@ export default async function AccountPage() {
                 <span className="font-medium text-gray-950 dark:text-white">{session.user.email}</span>
               </div>
             </div>
+
+            {session.user.phone && (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Phone Number</span>
+                  <span className="font-medium text-gray-950 dark:text-white">{session.user.phone}</span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

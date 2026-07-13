@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "next start",
     "lint": "next lint",
-    "db:seed": "node scripts/seed-mongodb.js"
+    "db:seed": "node scripts/seed-mongodb.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

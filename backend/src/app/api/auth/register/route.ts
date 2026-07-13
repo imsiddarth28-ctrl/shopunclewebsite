@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       name: validatedData.name,
       email: validatedData.email,
       password: hashedPassword,
+      phone: validatedData.phone,
       role: 'CUSTOMER',
       emailVerified: new Date(),
       createdAt: new Date(),

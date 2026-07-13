@@ -14,12 +14,17 @@ export default function SignUpPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phone) {
       return toast.error('Please fill in all fields')
+    }
+
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      return toast.error('Please enter a valid 10-digit Indian phone number')
     }
 
     if (password.length < 6) {
@@ -31,7 +36,7 @@ export default function SignUpPage() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, phone }),
       })
 
       const data = await response.json()
@@ -86,6 +91,15 @@ export default function SignUpPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
+                  required
+                />
+
+                <Input
+                  label="Phone Number"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="9876543210"
                   required
                 />
 

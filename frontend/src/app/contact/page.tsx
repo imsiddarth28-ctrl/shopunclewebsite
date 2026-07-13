@@ -93,6 +93,17 @@ export default function ContactPage() {
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                    <input
+                      required
+                      type="tel"
+                      pattern="^[6-9]\d{9}$"
+                      title="Please enter a valid 10-digit Indian phone number"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="e.g. 9876543210"
+                    />
+                  </div>
+                  <div>
                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Subject</label>
                     <input
                       required

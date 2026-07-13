@@ -141,9 +141,22 @@ export default function VintageStripPage() {
       ctx.fillStyle = '#3A312A'
       for (let y = 24; y < totalH - 20; y += holeGapY) {
         // left holes
-        ctx.beginPath(); ctx.roundRect?.(14 - holeR, y - holeR, holeR * 2, holeR * 1.6, 3) ?? ctx.rect(14 - holeR, y - holeR, holeR * 2, holeR * 1.6); ctx.fill()
+        ctx.beginPath()
+        if (ctx.roundRect) {
+          ctx.roundRect(14 - holeR, y - holeR, holeR * 2, holeR * 1.6, 3)
+        } else {
+          ctx.rect(14 - holeR, y - holeR, holeR * 2, holeR * 1.6)
+        }
+        ctx.fill()
+
         // right holes
-        ctx.beginPath(); ctx.roundRect?.(totalW - 14 - holeR, y - holeR, holeR * 2, holeR * 1.6, 3) ?? ctx.rect(totalW - 14 - holeR, y - holeR, holeR * 2, holeR * 1.6); ctx.fill()
+        ctx.beginPath()
+        if (ctx.roundRect) {
+          ctx.roundRect(totalW - 14 - holeR, y - holeR, holeR * 2, holeR * 1.6, 3)
+        } else {
+          ctx.rect(totalW - 14 - holeR, y - holeR, holeR * 2, holeR * 1.6)
+        }
+        ctx.fill()
       }
 
       setResultDataUrl(canvas.toDataURL('image/png'))
