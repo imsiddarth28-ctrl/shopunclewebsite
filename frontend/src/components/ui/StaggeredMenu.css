@@ -15,8 +15,8 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  right: 0;
+  bottom: 0;
   z-index: 55;
   overflow: hidden;
 }
@@ -26,7 +26,7 @@
 .sm-toggle-btn {
   position: absolute;
   top: 0;
-  right: 0;
+  right: 1rem;
   height: 4rem; /* matches navbar h-16 */
   padding: 0 1rem;
   display: inline-flex;

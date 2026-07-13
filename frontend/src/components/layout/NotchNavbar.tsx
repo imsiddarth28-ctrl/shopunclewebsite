@@ -140,7 +140,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
               pr-14 on mobile reserves 56px for the StaggeredMenu
               toggle button that sits at position:absolute right:0.
               On desktop (lg+) no padding needed.                  */}
-          <div className="ml-auto flex items-center gap-0.5 sm:gap-1 z-10 pr-14 lg:pr-0">
+          <div className="ml-auto flex items-center gap-0.5 sm:gap-1 z-10 pr-12 lg:pr-0">
 
             {/* Search — desktop only */}
             <div className="relative hidden xl:block">
