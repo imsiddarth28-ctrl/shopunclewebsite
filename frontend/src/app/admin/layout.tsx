@@ -14,9 +14,9 @@ import {
   Gift, TrendingUp, DollarSign, Clock, AlertCircle, User, Settings as SettingsIcon, LogOut as LogOutIcon
 } from 'lucide-react'
 
-const navigation = [
+const navigation: { name: string; href: string; icon: any; badge?: string }[] = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Orders', href: '/admin/orders', icon: ShoppingCart, badge: '12' },
+  { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Products', href: '/admin/products', icon: Package },
   { name: 'Categories', href: '/admin/categories', icon: Gift },
   { name: 'Customers', href: '/admin/customers', icon: Users },

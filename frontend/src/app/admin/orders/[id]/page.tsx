@@ -127,7 +127,7 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
 
   const isFulfilled = ['SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'].includes(order.status)
   const isPaid = order.paymentStatus === 'PAID'
-  const canAccessImages = isPaid && !isFulfilled && session?.user?.role === 'ADMIN'
+  const canAccessImages = session?.user?.role === 'ADMIN'
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">

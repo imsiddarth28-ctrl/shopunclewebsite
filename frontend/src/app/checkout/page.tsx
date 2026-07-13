@@ -67,9 +67,14 @@ export default function CheckoutPage() {
         ].filter(Boolean).join(', ')
 
         return {
+          productId: item.productId,
           name: item.name + (customDetails ? ` (${customDetails})` : ''),
           qty: item.quantity,
-          price: item.price
+          price: item.price,
+          frameOptionId: item.frameOptionId,
+          customizationData: item.customizationData,
+          previewImage: item.previewImage,
+          imageId: item.customizationData?.imageId
         }
       })
 
@@ -304,7 +309,7 @@ export default function CheckoutPage() {
                         placeholder="e.g. 9876543210" 
                         type="tel"
                         value={phone}
-                        onChange={e => setPhone(e.target.value)}
+                        onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                         required
                         className="py-3 px-4 rounded-xl border dark:border-gray-800 bg-white dark:bg-gray-900"
                       />

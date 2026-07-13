@@ -25,11 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // Check payment status and order status
-    if (order.paymentStatus !== 'PAID') {
-      return NextResponse.json({ error: 'Access denied: Order is unpaid' }, { status: 400 })
-    }
-
+    // Check order status
     if (order.status === 'CANCELLED') {
       return NextResponse.json({ error: 'Access denied: Order has been cancelled' }, { status: 400 })
     }

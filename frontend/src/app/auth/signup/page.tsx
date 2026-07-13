@@ -23,8 +23,8 @@ export default function SignUpPage() {
       return toast.error('Please fill in all fields')
     }
 
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      return toast.error('Please enter a valid 10-digit Indian phone number')
+    if (!/^(\+?91)?[6-9]\d{9}$/.test(phone)) {
+      return toast.error('Please enter a valid 10 or 12-digit Indian phone number')
     }
 
     if (password.length < 6) {
@@ -98,7 +98,7 @@ export default function SignUpPage() {
                   label="Phone Number"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                   placeholder="9876543210"
                   required
                 />

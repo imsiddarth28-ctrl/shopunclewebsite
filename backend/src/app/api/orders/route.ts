@@ -113,6 +113,38 @@ export async function POST(request: NextRequest) {
 
       const { db } = await connectToDatabase()
 
+      const orderItems = []
+      for (const item of items) {
+        let imageId: any = undefined
+        let publicId: string | undefined = undefined
+        let previewImage: string | undefined = item.previewImage
+
+        const imageIdStr = item.imageId || item.customizationData?.imageId
+        if (imageIdStr) {
+          imageId = getObjectId(imageIdStr)
+          const userImage = await db.collection('user_images').findOne({ _id: imageId })
+          if (userImage) {
+            publicId = userImage.publicId
+            if (userImage.secureUrl) {
+              previewImage = userImage.secureUrl
+            }
+          }
+        }
+
+        orderItems.push({
+          productId: item.productId ? getObjectId(item.productId) : undefined,
+          name: item.name,
+          quantity: item.qty,
+          unitPrice: item.price,
+          totalPrice: item.qty * item.price,
+          frameOptionId: item.frameOptionId ? getObjectId(item.frameOptionId) : undefined,
+          customizationData: item.customizationData,
+          previewImage,
+          imageId,
+          publicId,
+        })
+      }
+
       const orderDoc = {
         orderId,
         orderNumber: orderId, // Uniformity with existing schema
@@ -120,12 +152,7 @@ export async function POST(request: NextRequest) {
         customerPhone,
         address: address || '',
         notes: notes || '',
-        items: items.map((item: any) => ({
-          name: item.name,
-          quantity: item.qty,
-          unitPrice: item.price,
-          totalPrice: item.qty * item.price,
-        })),
+        items: orderItems,
         totalAmount,
         total: totalAmount, // Uniformity with existing schema
         status: 'pending',
@@ -138,7 +165,14 @@ export async function POST(request: NextRequest) {
       await db.collection('orders').insertOne(orderDoc)
 
       // Build WhatsApp message text
-      const itemListText = items.map((item: any) => `- ${item.name} x ${item.qty} (₹${item.price})`).join('\n')
+      const itemListText = orderItems.map((item: any) => {
+        let itemText = `- ${item.name} x ${item.quantity} (₹${item.unitPrice})`
+        if (item.previewImage) {
+          itemText += `\n  Image: ${item.previewImage}`
+        }
+        return itemText
+      }).join('\n')
+
       let messageText = `Hi, I would like to place an order:\nOrder ID: ${orderId}\nCustomer: ${customerName}\nPhone: ${customerPhone}\nDelivery Address: ${address || 'N/A'}\n`
       if (notes) {
         messageText += `Notes: ${notes}\n`

@@ -45,9 +45,17 @@ export default function AdminOrdersPage() {
         ...(statusFilter && { status: statusFilter }),
       })
       const res = await fetch(`/api/orders?${params}`)
-      const data = await res.json()
-      setOrders(data.orders)
-      setTotalPages(data.pagination.totalPages)
+      if (res.ok) {
+        const data = await res.json()
+        setOrders(data.orders || [])
+        setTotalPages(data.pagination?.totalPages || 1)
+      } else {
+        setOrders([])
+        setTotalPages(1)
+        if (res.status === 401) {
+          router.push('/auth/signin')
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch orders:', error)
     } finally {
@@ -164,21 +172,21 @@ export default function AdminOrdersPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                          {order.user?.name || 'Guest'}
+                          {order.user?.name || order.customerName || 'Guest'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate">
-                          {order.items.map((i: any) => i.name).join(', ')}
+                          {order.items?.map((i: any) => i.name).join(', ') || 'N/A'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                          {order.items.map((i: any) => i.customizationData?.selectedSize || i.size || 'Standard').join(', ')}
+                          {order.items?.map((i: any) => i.customizationData?.selectedSize || i.size || 'Standard').join(', ') || 'N/A'}
                         </td>
                         <td className="px-6 py-4">
-                          <Badge variant={statusConfig[order.status as keyof typeof statusConfig]?.variant as BadgeProps['variant'] || 'default'}>
-                            {statusConfig[order.status as keyof typeof statusConfig]?.label || order.status}
+                          <Badge variant={statusConfig[(order.status || 'PENDING').toUpperCase() as keyof typeof statusConfig]?.variant as BadgeProps['variant'] || 'default'}>
+                            {statusConfig[(order.status || 'PENDING').toUpperCase() as keyof typeof statusConfig]?.label || order.status}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 font-mono text-xs text-gray-600 dark:text-gray-400 max-w-[150px] truncate">
-                          {order.items.map((i: any) => i.imageId || 'N/A').join(', ')}
+                          {order.items?.map((i: any) => i.imageId || 'N/A').join(', ') || 'N/A'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                           {formatDate(order.createdAt)}

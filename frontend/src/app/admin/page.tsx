@@ -266,9 +266,11 @@ export default function AdminDashboard() {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {recentOrdersList.map((order: any) => {
-                  const status = statusConfig[order.status as keyof typeof statusConfig] || { variant: 'info', label: order.status, icon: Clock }
-                  const payment = paymentConfig[order.paymentStatus as keyof typeof paymentConfig] || { variant: 'warning', label: order.paymentStatus }
-                  const customerName = order.shippingAddress?.name || 'Guest'
+                  const statusKey = (order.status || 'PENDING').toUpperCase()
+                  const status = statusConfig[statusKey as keyof typeof statusConfig] || { variant: 'info', label: order.status, icon: Clock }
+                  const paymentKey = (order.paymentStatus || 'PENDING').toUpperCase()
+                  const payment = paymentConfig[paymentKey as keyof typeof paymentConfig] || { variant: 'warning', label: order.paymentStatus }
+                  const customerName = order.customerName || order.shippingAddress?.name || 'Guest'
                   const itemQuantity = order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0
 
                   return (
