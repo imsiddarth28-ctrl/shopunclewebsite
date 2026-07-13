@@ -210,12 +210,24 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-              <p className="font-semibold text-gray-900 dark:text-white">{order.shippingAddress.name}</p>
-              <p>{order.shippingAddress.addressLine1}</p>
-              {order.shippingAddress.addressLine2 && <p>{order.shippingAddress.addressLine2}</p>}
-              <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
-              <p>{order.shippingAddress.country}</p>
-              <p className="pt-2 text-xs text-gray-500">Phone: {order.shippingAddress.phone}</p>
+              {order.shippingAddress ? (
+                <>
+                  <p className="font-semibold text-gray-900 dark:text-white">{order.shippingAddress.name}</p>
+                  <p>{order.shippingAddress.addressLine1}</p>
+                  {order.shippingAddress.addressLine2 && <p>{order.shippingAddress.addressLine2}</p>}
+                  <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
+                  <p>{order.shippingAddress.country}</p>
+                  <p className="pt-2 text-xs text-gray-500">Phone: {order.shippingAddress.phone}</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-gray-900 dark:text-white">{order.customerName || 'Guest'}</p>
+                  <p className="whitespace-pre-line">{order.address || 'No address provided'}</p>
+                  {order.customerPhone && (
+                    <p className="pt-2 text-xs text-gray-500">Phone: {order.customerPhone}</p>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
