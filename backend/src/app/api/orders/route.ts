@@ -184,7 +184,8 @@ export async function POST(request: NextRequest) {
       }).catch((err) => console.error('[WhatsApp] Notification failed:', err))
 
       // Also build a wa.me fallback link for the customer
-      const shopOwnerNumber = process.env.SHOP_OWNER_NUMBER || '918019822006'
+      // Strip +, spaces and any non-digit chars so wa.me link always works
+      const shopOwnerNumber = (process.env.SHOP_OWNER_NUMBER || '918019822006').replace(/\D/g, '')
       const itemListText = orderItems.map((item: any) => `- ${item.name} x ${item.quantity} (₹${item.unitPrice})`).join('\n')
       let messageText = `Hi, I placed an order:\nOrder ID: ${orderId}\nCustomer: ${customerName}\nPhone: ${customerPhone}\nDelivery Address: ${address || 'N/A'}\n`
       if (notes) messageText += `Notes: ${notes}\n`

@@ -68,7 +68,8 @@ export async function notifyShopOwnerNewOrder(params: {
   }>
   totalAmount: number
 }): Promise<boolean> {
-  const shopOwnerNumber = process.env.SHOP_OWNER_NUMBER || '918019822006'
+  // Strip +, spaces and non-digit chars so the API call always gets a clean number
+  const shopOwnerNumber = (process.env.SHOP_OWNER_NUMBER || '918019822006').replace(/\D/g, '')
 
   const { orderId, otp, customerName, customerPhone, address, notes, items, totalAmount } = params
 
