@@ -5,7 +5,6 @@ import { connectToDatabase, getObjectId } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { ZodError } from 'zod'
 import { orderSchema } from '@/lib/validations'
-import { notifyShopOwnerNewOrder } from '@/lib/whatsapp'
 
 export async function GET(request: NextRequest) {
   try {
@@ -165,31 +164,22 @@ export async function POST(request: NextRequest) {
 
       await db.collection('orders').insertOne(orderDoc)
 
-      // Automatically notify the shop owner via WhatsApp Business API
-      // This runs in the background — does not block the response
-      notifyShopOwnerNewOrder({
-        orderId,
-        otp,
-        customerName,
-        customerPhone,
-        address: address || 'N/A',
-        notes,
-        items: orderItems.map((item: any) => ({
-          name: item.name,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          previewImage: item.previewImage,
-        })),
-        totalAmount,
-      }).catch((err) => console.error('[WhatsApp] Notification failed:', err))
+      // Build WhatsApp message text
+      const itemListText = orderItems.map((item: any) => {
+        let itemText = `- ${item.name} x ${item.quantity} (₹${item.unitPrice})`
+        if (item.previewImage) {
+          itemText += `\n  Image: ${item.previewImage}`
+        }
+        return itemText
+      }).join('\n')
 
-      // Also build a wa.me fallback link for the customer
-      // Strip +, spaces and any non-digit chars so wa.me link always works
-      const shopOwnerNumber = (process.env.SHOP_OWNER_NUMBER || '918019822006').replace(/\D/g, '')
-      const itemListText = orderItems.map((item: any) => `- ${item.name} x ${item.quantity} (₹${item.unitPrice})`).join('\n')
-      let messageText = `Hi, I placed an order:\nOrder ID: ${orderId}\nCustomer: ${customerName}\nPhone: ${customerPhone}\nDelivery Address: ${address || 'N/A'}\n`
-      if (notes) messageText += `Notes: ${notes}\n`
-      messageText += `\nItems:\n${itemListText}\n\nTotal: ₹${totalAmount}\nVerification OTP: ${otp}`
+      let messageText = `Hi, I would like to place an order:\nOrder ID: ${orderId}\nCustomer: ${customerName}\nPhone: ${customerPhone}\nDelivery Address: ${address || 'N/A'}\n`
+      if (notes) {
+        messageText += `Notes: ${notes}\n`
+      }
+      messageText += `\nItems:\n${itemListText}\n\nTotal: ₹${totalAmount}\nVerification OTP: ${otp}\n\n📸 Please attach and send the photo you want printed in this chat.\n\nPlease confirm my order.`
+
+      const shopOwnerNumber = process.env.SHOP_OWNER_NUMBER || '919876543210'
       const whatsappLink = `https://wa.me/${shopOwnerNumber}?text=${encodeURIComponent(messageText)}`
 
       return NextResponse.json({

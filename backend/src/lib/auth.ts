@@ -3,6 +3,8 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { getUserByEmail, getUserById } from '@/lib/models'
+import { connectToDatabase } from '@/lib/mongodb'
+import { ObjectId } from 'mongodb'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -53,11 +55,89 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID || 'dummy-google-client-id',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-google-client-secret',
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        const { email, name, image } = user
+        if (!email) return false
+
+        try {
+          const { db } = await connectToDatabase()
+
+          // Check if user already exists
+          let existingUser = await db.collection('users').findOne({ email })
+
+          if (existingUser) {
+            // User exists. Link account record if not already linked
+            const existingAccount = await db.collection('accounts').findOne({
+              provider: 'google',
+              providerAccountId: account.providerAccountId,
+            })
+
+            if (!existingAccount) {
+              await db.collection('accounts').insertOne({
+                userId: existingUser._id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                refresh_token: account.refresh_token || null,
+                access_token: account.access_token || null,
+                expires_at: account.expires_at || null,
+                token_type: account.token_type || null,
+                scope: account.scope || null,
+                id_token: account.id_token || null,
+                session_state: account.session_state || null,
+              })
+            }
+
+            // Sync database user ID and role to user object for the jwt callback
+            user.id = existingUser._id.toString()
+            ;(user as any).role = existingUser.role || 'CUSTOMER'
+            return true
+          } else {
+            // Create user and link account
+            const newUserDoc = {
+              name: name || 'User',
+              email,
+              password: '', // OAuth users have no password
+              role: 'CUSTOMER',
+              emailVerified: new Date(),
+              image: image || null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }
+
+            const insertResult = await db.collection('users').insertOne(newUserDoc)
+
+            await db.collection('accounts').insertOne({
+              userId: insertResult.insertedId,
+              type: account.type,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              refresh_token: account.refresh_token || null,
+              access_token: account.access_token || null,
+              expires_at: account.expires_at || null,
+              token_type: account.token_type || null,
+              scope: account.scope || null,
+              id_token: account.id_token || null,
+              session_state: account.session_state || null,
+            })
+
+            user.id = insertResult.insertedId.toString()
+            ;(user as any).role = 'CUSTOMER'
+            return true
+          }
+        } catch (error) {
+          console.error('Error during Google sign in callback on backend:', error)
+          return false
+        }
+      }
+      return true
+    },
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id

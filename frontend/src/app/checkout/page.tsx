@@ -29,10 +29,11 @@ export default function CheckoutPage() {
   
   // App states
   const [isProcessing, setIsProcessing] = useState(false)
-  const [orderResult, setOrderResult] = useState<{ orderId: string; otp: string; whatsappLink: string } | null>(null)
+  const [orderResult, setOrderResult] = useState<{ orderId: string; otp: string; whatsappLink: string; items?: any[] } | null>(null)
   const [copiedOrderId, setCopiedOrderId] = useState(false)
   const [copiedOtp, setCopiedOtp] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [copyingImageMap, setCopyingImageMap] = useState<Record<string, boolean>>({})
 
   const subtotal = getSubtotal()
   const shipping = subtotal >= 999 ? 0 : 99
@@ -112,7 +113,12 @@ export default function CheckoutPage() {
         setOrderResult({
           orderId: result.orderId,
           otp: result.otp,
-          whatsappLink: result.whatsappLink
+          whatsappLink: result.whatsappLink,
+          items: items.map(item => ({
+            name: item.name,
+            image: item.previewImage || item.image || '/products/placeholder.jpg',
+            quantity: item.quantity,
+          }))
         })
         
         toast.success('Order placed! Redirecting to WhatsApp...')
@@ -148,6 +154,75 @@ export default function CheckoutPage() {
       setTimeout(() => setCopiedOtp(false), 2000)
     }
     toast.success('Copied to clipboard!')
+  }
+
+  const copyImageToClipboard = async (imageUrl: string) => {
+    if (!imageUrl) return
+    setCopyingImageMap(prev => ({ ...prev, [imageUrl]: true }))
+    try {
+      let blob: Blob
+      if (imageUrl.startsWith('data:')) {
+        const parts = imageUrl.split(',')
+        const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png'
+        const bstr = atob(parts[1])
+        let n = bstr.length
+        const u8arr = new Uint8Array(n)
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n)
+        }
+        blob = new Blob([u8arr], { type: mime })
+      } else {
+        const response = await fetch(imageUrl)
+        blob = await response.blob()
+      }
+
+      if (blob.type === 'image/png') {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'image/png': blob
+          })
+        ])
+        toast.success('Photo copied! Paste (Ctrl+V) inside the WhatsApp chat.')
+      } else {
+        const img = new window.Image()
+        img.crossOrigin = 'anonymous'
+        img.src = imageUrl
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0)
+          canvas.toBlob(async (pngBlob) => {
+            if (pngBlob) {
+              try {
+                await navigator.clipboard.write([
+                  new ClipboardItem({
+                    'image/png': pngBlob
+                  })
+                ])
+                toast.success('Photo copied! Paste (Ctrl+V) inside the WhatsApp chat.')
+              } catch (clipErr) {
+                console.error(clipErr)
+                toast.error('Failed to copy. Try downloading it manually.')
+              } finally {
+                setCopyingImageMap(prev => ({ ...prev, [imageUrl]: false }))
+              }
+            }
+          }, 'image/png')
+        }
+        img.onerror = () => {
+          toast.error('Failed to load image for copying.')
+          setCopyingImageMap(prev => ({ ...prev, [imageUrl]: false }))
+        }
+        return
+      }
+    } catch (err) {
+      console.error('Clipboard copy error:', err)
+      toast.error('Could not copy image automatically.')
+    } finally {
+      setCopyingImageMap(prev => ({ ...prev, [imageUrl]: false }))
+    }
   }
 
   // Render Checkout Success Screen
@@ -200,12 +275,59 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* Products List Section */}
+            {orderResult.items && orderResult.items.length > 0 && (
+              <div className="space-y-3 border-t border-b dark:border-gray-800 py-4 my-4">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-300">
+                  Products in this Order:
+                </p>
+                <div className="space-y-3">
+                  {orderResult.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50 p-3 rounded-xl border dark:border-gray-800">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden border bg-white dark:bg-gray-800 flex-shrink-0">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate pr-2">{item.name}</p>
+                          <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                        </div>
+                      </div>
+                      
+                      {item.image && item.image !== '/products/placeholder.jpg' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs py-1 px-3 h-auto whitespace-nowrap flex-shrink-0"
+                          onClick={() => copyImageToClipboard(item.image)}
+                          disabled={copyingImageMap[item.image]}
+                        >
+                          {copyingImageMap[item.image] ? 'Copying...' : '📋 Copy Photo'}
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Action Section */}
             <div className="space-y-4 text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Your order is currently in <Badge variant="warning">pending</Badge> status.
-                To complete your order, click the button below to send your invoice and verification code on WhatsApp:
-              </p>
+              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <p>Your order is currently in <Badge variant="warning">pending</Badge> status.</p>
+                <p className="font-semibold text-emerald-600 dark:text-emerald-400 mt-2">
+                  👉 Instructions to Complete Order:
+                </p>
+                <ul className="text-xs text-left max-w-sm mx-auto list-decimal space-y-1.5 mt-1 text-gray-500 dark:text-gray-400 pl-4">
+                  <li>Click <b>📋 Copy Photo</b> above for each customized product.</li>
+                  <li>Click the green <b>Send Order via WhatsApp</b> button below.</li>
+                  <li>Once the WhatsApp chat opens, paste (<b>Ctrl+V</b> on desktop, or <b>long press & select Paste</b> on mobile) the photo(s) into the chat alongside the text.</li>
+                </ul>
+              </div>
 
               <a 
                 href={orderResult.whatsappLink} 

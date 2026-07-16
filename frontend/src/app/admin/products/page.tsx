@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { connectToDatabase } from '@/lib/mongodb'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Plus, Package } from 'lucide-react'
+import { Plus, Package, Upload } from 'lucide-react'
 import { ProductListTable } from './ProductListTable'
 
 export const revalidate = 0 // Dynamic server rendering
@@ -51,12 +51,20 @@ export default async function AdminProductsPage() {
           </p>
         </div>
         
-        <Link href="/admin/products/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Product
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/products/bulk">
+            <Button variant="outline">
+              <Upload className="w-4 h-4 mr-2" />
+              Bulk Import
+            </Button>
+          </Link>
+          <Link href="/admin/products/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Product
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Table Card */}
