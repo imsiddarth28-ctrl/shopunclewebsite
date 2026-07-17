@@ -106,49 +106,86 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary-600 animate-spin mb-4" />
-        <p className="text-gray-500 dark:text-gray-400 font-medium">Loading dashboard statistics...</p>
+      <div className="space-y-8 animate-fade-in">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="skeleton h-8 w-48" />
+            <div className="skeleton h-4 w-72" />
+          </div>
+          <div className="skeleton h-10 w-36 rounded-xl" />
+        </div>
+        {/* Stat card skeletons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="card p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="skeleton h-4 w-24" />
+                  <div className="skeleton h-8 w-20" />
+                  <div className="skeleton h-3 w-32" />
+                </div>
+                <div className="skeleton w-12 h-12 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Table skeleton */}
+        <div className="card p-6 space-y-4">
+          <div className="skeleton h-6 w-40" />
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <div className="skeleton h-4 w-28" />
+              <div className="skeleton h-4 w-40" />
+              <div className="skeleton h-4 w-16 ml-auto" />
+              <div className="skeleton h-6 w-20 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
 
   const stats = [
-    { 
-      title: 'Total Orders', 
-      value: data?.overview?.totalOrders?.toLocaleString('en-IN') || '0', 
-      change: '+12.5%', 
+    {
+      title: 'Total Orders',
+      value: data?.overview?.totalOrders?.toLocaleString('en-IN') || '0',
+      change: '+12.5%',
       trend: 'up',
       icon: ShoppingBag,
       color: 'bg-blue-500',
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+      iconColor: '#3b82f6',
     },
-    { 
-      title: 'Revenue', 
-      value: formatPrice(data?.overview?.totalRevenue || 0), 
-      change: '+8.2%', 
+    {
+      title: 'Revenue',
+      value: formatPrice(data?.overview?.totalRevenue || 0),
+      change: '+8.2%',
       trend: 'up',
       icon: DollarSign,
       color: 'bg-green-500',
       bgColor: 'bg-green-100 dark:bg-green-900/30',
+      iconColor: '#22c55e',
     },
-    { 
-      title: 'Customers', 
-      value: data?.overview?.totalCustomers?.toLocaleString('en-IN') || '0', 
-      change: '+15.3%', 
+    {
+      title: 'Customers',
+      value: data?.overview?.totalCustomers?.toLocaleString('en-IN') || '0',
+      change: '+15.3%',
       trend: 'up',
       icon: Users,
       color: 'bg-purple-500',
       bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: '#a855f7',
     },
-    { 
-      title: 'Pending Orders', 
-      value: data?.overview?.pendingOrders?.toLocaleString('en-IN') || '0', 
-      change: '-0.5%', 
+    {
+      title: 'Pending Orders',
+      value: data?.overview?.pendingOrders?.toLocaleString('en-IN') || '0',
+      change: '-0.5%',
       trend: 'down',
       icon: Clock,
       color: 'bg-orange-500',
       bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+      iconColor: '#f97316',
     },
   ]
 
@@ -172,26 +209,37 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children">
         {stats.map((stat, index) => (
-          <Card key={stat.title} className="card-hover animate-slide-up" style={{ animationDelay: `${index * 100}ms` }}>
+          <Card key={stat.title} className="card-hover group overflow-hidden relative">
+            {/* Background gradient orb */}
+            <div className={cn(
+              'absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10 group-hover:opacity-20 transition-opacity duration-300',
+              stat.color
+            )} />
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.title}</p>
-                  <p className="heading-3 text-gray-900 dark:text-white mt-1">{stat.value}</p>
-                  <div className="flex items-center gap-2 mt-2">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
+                  <div className="flex items-center gap-1 pt-0.5">
                     <span className={cn(
-                      'text-sm font-medium',
-                      stat.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      'inline-flex items-center text-xs font-semibold px-1.5 py-0.5 rounded-full',
+                      stat.trend === 'up'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
                     )}>
-                      {stat.trend === 'up' ? <ArrowUpRight className="w-4 h-4 inline" /> : <ArrowDownRight className="w-4 h-4 inline" />}
-                      {stat.change} vs last month
+                      {stat.trend === 'up' ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <ArrowDownRight className="w-3 h-3 mr-0.5" />}
+                      {stat.change}
                     </span>
+                    <span className="text-xs text-gray-400">vs last month</span>
                   </div>
                 </div>
-                <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', stat.bgColor)}>
-                  <stat.icon className="w-6 h-6" style={{ color: stat.color.replace('bg-', 'text-') }} />
+                <div className={cn(
+                  'w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110',
+                  stat.bgColor
+                )}>
+                  <stat.icon className="w-6 h-6" style={{ color: stat.iconColor }} />
                 </div>
               </div>
             </CardContent>

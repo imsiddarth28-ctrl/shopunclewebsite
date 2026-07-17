@@ -1,13 +1,25 @@
 import { v2 as cloudinary } from 'cloudinary'
 
+// Fail loudly at startup if Cloudinary env vars are missing
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+const apiKey = process.env.CLOUDINARY_API_KEY
+const apiSecret = process.env.CLOUDINARY_API_SECRET
+
+if (!cloudName || !apiKey || !apiSecret) {
+  // Log a warning rather than crashing during build-time imports
+  console.warn(
+    '[cloudinary] CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET must be set as environment variables.'
+  )
+}
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '765828438969651',
-  api_key: process.env.CLOUDINARY_API_KEY || '765828438969651',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'lkezWHJAg9ALRU9DTMKdPYTN-Mw',
+  cloud_name: cloudName,
+  api_key: apiKey,
+  api_secret: apiSecret,
 })
 
 /**
- * Uploads a base64 encoded image to Cloudinary.
+ * Uploads a base64 encoded image or DataURL to Cloudinary.
  * @param base64Data Raw base64 string or DataURL (e.g. data:image/png;base64,...)
  * @param folder Target folder inside Cloudinary
  */

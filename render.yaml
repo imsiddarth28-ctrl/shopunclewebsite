@@ -31,3 +31,8 @@ services:
         sync: false # Set in dashboard
       - key: CLOUDINARY_API_SECRET
         sync: false # Set in dashboard
+      - key: ADMIN_EMAIL
+        sync: false # Set in dashboard
+      - key: ADMIN_PASSWORD
+        sync: false # Set in dashboard
+
