@@ -69,7 +69,9 @@ export async function GET(request: NextRequest) {
 
     const filter: any = {}
     if (userIdFilter) filter.userId = userIdFilter
-    if (status) filter.status = status
+    if (status) {
+      filter.status = { $regex: `^${status}$`, $options: 'i' }
+    }
 
     const [orders, total] = await Promise.all([
       db.collection('orders').find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
