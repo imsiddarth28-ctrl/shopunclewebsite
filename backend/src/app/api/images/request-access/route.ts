@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const logEntry = {
       orderId: getObjectId(orderId),
       imageId: getObjectId(imageId),
-      adminId: new ObjectId(session.user.id),
+      adminId: getObjectId(session.user.id),
       timestamp: new Date(),
       reason: 'Order Fulfillment',
     }

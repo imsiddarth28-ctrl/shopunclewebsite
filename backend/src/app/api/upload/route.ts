@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectToDatabase } from '@/lib/mongodb'
+import { connectToDatabase, getObjectId } from '@/lib/mongodb'
 import { uploadImage } from '@/lib/cloudinary'
 import { ObjectId } from 'mongodb'
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const { db } = await connectToDatabase()
     
     const userImage = {
-      ownerId: new ObjectId(session.user.id),
+      ownerId: getObjectId(session.user.id),
       publicId: cloudinaryResponse.publicId,
       secureUrl: cloudinaryResponse.secureUrl,
       createdAt: new Date(),

@@ -32,15 +32,15 @@ export const productSchema = z.object({
   compareAtPrice: z.number().positive().optional(),
   categoryId: z.string().min(1, 'Category is required'),
   isCustomizable: z.boolean().default(false),
-  images: z.array(z.string().url()).min(1, 'At least one image is required'),
+  images: z.array(z.string()).min(1, 'At least one image is required'),
 })
 
 export const frameOptionSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
-  modelUrl: z.string().url().optional().or(z.literal('')),
-  textureUrl: z.string().url().optional().or(z.literal('')),
-  thumbnailUrl: z.string().url(),
+  modelUrl: z.string().optional().or(z.literal('')),
+  textureUrl: z.string().optional().or(z.literal('')),
+  thumbnailUrl: z.string(),
   price: z.number().positive('Price must be positive'),
   sizes: z.array(z.object({
     size: z.string(),
@@ -53,7 +53,7 @@ export const frameOptionSchema = z.object({
   })).min(1, 'At least one size is required'),
   materials: z.array(z.object({
     name: z.string(),
-    textureUrl: z.string().url(),
+    textureUrl: z.string(),
     priceModifier: z.number().default(0),
   })).optional(),
 })
@@ -115,12 +115,12 @@ export const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   title: z.string().optional(),
   comment: z.string().optional(),
-  images: z.array(z.string().url()).optional(),
+  images: z.array(z.string()).optional(),
 })
 
 export const customizationSchema = z.object({
   frameOptionId: z.string(),
-  originalImage: z.string().url(),
+  originalImage: z.string(),
   position: z.object({
     x: z.number(),
     y: z.number(),
