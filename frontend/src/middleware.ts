@@ -22,6 +22,11 @@ export default withAuth(
           return true
         }
 
+        // Protect admin routes
+        if (pathname.startsWith('/admin')) {
+          return token?.role === 'ADMIN'
+        }
+
         // Require authentication for all other pages
         return !!token
       },

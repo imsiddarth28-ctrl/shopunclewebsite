@@ -4,22 +4,39 @@ import { authOptions } from '@/lib/auth'
 import { connectToDatabase, getObjectId } from '@/lib/mongodb'
 import { ZodError } from 'zod'
 import { productSchema } from '@/lib/validations'
+import { handleCors, addCorsHeaders } from '@/lib/cors'
+import { rateLimit, generalLimit, adminLimit } from '@/lib/rateLimit'
+
+const IS_PROD = process.env.NODE_ENV === 'production'
+
+/** Safely parse and clamp pagination params. */
+function parsePagination(searchParams: URLSearchParams) {
+  const page  = Math.max(1, parseInt(searchParams.get('page')  || '1') || 1)
+  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '12') || 12))
+  return { page, limit, skip: (page - 1) * limit }
+}
 
 export async function GET(request: NextRequest) {
+  const corsResult = handleCors(request)
+  if (corsResult) return corsResult
+
+  if (!rateLimit(request, generalLimit)) {
+    return addCorsHeaders(request, NextResponse.json({ error: 'Too many requests, please slow down.' }, { status: 429 }))
+  }
+
   try {
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '12')
-    const category = searchParams.get('category')
-    const search = searchParams.get('search')
-    const sort = searchParams.get('sort') || 'newest'
-    const minPrice = searchParams.get('minPrice')
-    const maxPrice = searchParams.get('maxPrice')
+    const { page, limit, skip } = parsePagination(searchParams)
+
+    const category       = searchParams.get('category')
+    const search         = searchParams.get('search')
+    const sort           = searchParams.get('sort') || 'newest'
+    const minPrice       = searchParams.get('minPrice')
+    const maxPrice       = searchParams.get('maxPrice')
     const isCustomizable = searchParams.get('customizable') === 'true'
-    const featured = searchParams.get('featured') === 'true'
+    const featured       = searchParams.get('featured') === 'true'
 
     const { db } = await connectToDatabase()
-
     const filter: any = { isActive: true }
 
     if (category) {
@@ -28,9 +45,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
+      // Sanitise search — limit to 100 chars, no regex metacharacters
+      const safeSearch = search.slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { name:        { $regex: safeSearch, $options: 'i' } },
+        { description: { $regex: safeSearch, $options: 'i' } },
       ]
     }
 
@@ -41,49 +60,47 @@ export async function GET(request: NextRequest) {
     }
 
     if (isCustomizable) filter.isCustomizable = true
-    if (featured) filter.isFeatured = true
+    if (featured)       filter.isFeatured = true
 
-    let sortOption: any = { createdAt: -1 }
-    switch (sort) {
-      case 'price-low': sortOption = { price: 1 }; break
-      case 'price-high': sortOption = { price: -1 }; break
-      case 'popular': sortOption = { 'orderCount': -1 }; break
-      case 'rating': sortOption = { 'averageRating': -1 }; break
-      default: sortOption = { createdAt: -1 }
+    const SORT_MAP: Record<string, any> = {
+      'price-low':  { price: 1 },
+      'price-high': { price: -1 },
+      'popular':    { orderCount: -1 },
+      'rating':     { averageRating: -1 },
     }
-
-    const skip = (page - 1) * limit
+    const sortOption = SORT_MAP[sort] ?? { createdAt: -1 }
 
     const [products, total] = await Promise.all([
-      db.collection('products')
-        .find(filter)
-        .sort(sortOption)
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
-      db.collection('products').countDocuments(filter)
+      db.collection('products').find(filter).sort(sortOption as any).skip(skip).limit(limit).toArray(),
+      db.collection('products').countDocuments(filter),
     ])
 
-    return NextResponse.json({
+    return addCorsHeaders(request, NextResponse.json({
       products,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-    })
+    }))
   } catch (error) {
     console.error('Get products error:', error)
-    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
+    return addCorsHeaders(request, NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 }))
   }
 }
 
 export async function POST(request: NextRequest) {
+  const corsResult = handleCors(request)
+  if (corsResult) return corsResult
+
+  if (!rateLimit(request, adminLimit)) {
+    return addCorsHeaders(request, NextResponse.json({ error: 'Too many requests' }, { status: 429 }))
+  }
+
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return addCorsHeaders(request, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
     }
 
     const body = await request.json()
     const validatedData = productSchema.parse(body)
-
     const { db } = await connectToDatabase()
 
     const product = {
@@ -91,18 +108,24 @@ export async function POST(request: NextRequest) {
       categoryId: getObjectId(validatedData.categoryId),
       slug: validatedData.slug || validatedData.name.toLowerCase().replace(/\s+/g, '-'),
       images: validatedData.images || [],
+      isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
     const result = await db.collection('products').insertOne(product)
-
-    return NextResponse.json({ ...product, _id: result.insertedId }, { status: 201 })
+    return addCorsHeaders(request, NextResponse.json({ ...product, _id: result.insertedId }, { status: 201 }))
   } catch (error) {
     if (error instanceof ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 })
+      // Never expose internal schema details to clients in production
+      const details = IS_PROD ? undefined : error.errors
+      return addCorsHeaders(request, NextResponse.json({ error: 'Validation failed', ...(details && { details }) }, { status: 400 }))
     }
     console.error('Create product error:', error)
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 })
+    return addCorsHeaders(request, NextResponse.json({ error: 'Failed to create product' }, { status: 500 }))
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCors(request) ?? new NextResponse(null, { status: 204 })
 }

@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { connectToDatabase, getObjectId } from '@/lib/mongodb'
 import { v2 as cloudinary } from 'cloudinary'
+import { handleCors, addCorsHeaders } from '@/lib/cors'
+import { rateLimit, uploadLimit } from '@/lib/rateLimit'
 
 // Allow up to 15 MB for image uploads (overrides Next.js default 1 MB)
 export const maxDuration = 60
@@ -46,11 +48,22 @@ async function uploadBufferToCloudinary(
  * Streams the file to Cloudinary without base64 conversion (avoids 413).
  */
 export async function POST(request: NextRequest) {
+  const corsResult = handleCors(request)
+  if (corsResult) return corsResult
+
+  // Rate limit: 20 uploads per 10 minutes per IP
+  if (!rateLimit(request, uploadLimit)) {
+    return addCorsHeaders(request, NextResponse.json(
+      { error: 'Upload rate limit exceeded. Please wait before uploading more images.' },
+      { status: 429 }
+    ))
+  }
+
   try {
     // Auth check
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return addCorsHeaders(request, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
     }
 
     // Parse multipart form data
@@ -63,18 +76,18 @@ export async function POST(request: NextRequest) {
 
     // Validate file type
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: `Invalid file type "${file.type}". Allowed: JPEG, PNG, WebP, GIF, AVIF.` },
+      return addCorsHeaders(request, NextResponse.json(
+        { error: `Invalid file type. Allowed: JPEG, PNG, WebP, GIF, AVIF.` },
         { status: 400 }
-      )
+      ))
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      return NextResponse.json(
+      return addCorsHeaders(request, NextResponse.json(
         { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed is 10 MB.` },
         { status: 400 }
-      )
+      ))
     }
 
     // Convert to Buffer for streaming upload (no base64 overhead)
@@ -98,12 +111,16 @@ export async function POST(request: NextRequest) {
     }
     const result = await db.collection('user_images').insertOne(userImage)
 
-    return NextResponse.json(
+    return addCorsHeaders(request, NextResponse.json(
       { imageId: result.insertedId.toString(), secureUrl },
       { status: 201 }
-    )
+    ))
   } catch (error) {
     console.error('Image upload API error:', error)
-    return NextResponse.json({ error: 'Failed to upload image. Please try again.' }, { status: 500 })
+    return addCorsHeaders(request, NextResponse.json({ error: 'Failed to upload image. Please try again.' }, { status: 500 }))
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCors(request) ?? new NextResponse(null, { status: 204 })
 }

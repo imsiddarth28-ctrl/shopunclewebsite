@@ -2,14 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { connectToDatabase } from '@/lib/mongodb'
+import { handleCors, addCorsHeaders } from '@/lib/cors'
+import { rateLimit, adminLimit } from '@/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const corsResult = handleCors(request)
+  if (corsResult) return corsResult
+  if (!rateLimit(request, adminLimit)) {
+    return addCorsHeaders(request, NextResponse.json({ error: 'Too many requests' }, { status: 429 }))
+  }
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return addCorsHeaders(request, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
     }
 
     const { db } = await connectToDatabase()
@@ -89,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-    return NextResponse.json({
+    return addCorsHeaders(request, NextResponse.json({
       overview: {
         totalOrders,
         totalRevenue: totalRevenue[0]?.total || 0,
@@ -113,9 +120,13 @@ export async function GET(request: NextRequest) {
         _id:    o._id.toString(),
         userId: o.userId?.toString(),
       })),
-    })
+    }))
   } catch (error) {
     console.error('Analytics error:', error)
-    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 })
+    return addCorsHeaders(request, NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 }))
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCors(request) ?? new NextResponse(null, { status: 204 })
 }

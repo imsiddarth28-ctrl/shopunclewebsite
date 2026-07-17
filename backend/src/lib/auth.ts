@@ -6,6 +6,10 @@ import { getUserByEmail, getUserById } from '@/lib/models'
 import { connectToDatabase } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 
+if (!process.env.NEXTAUTH_SECRET || process.env.NEXTAUTH_SECRET === 'your-super-secret-key-change-in-production') {
+  console.warn('[auth] WARNING: NEXTAUTH_SECRET is not configured or using default placeholder. Sessions are insecure!')
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -59,8 +63,8 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || 'dummy-google-client-id',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-google-client-secret',
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
   callbacks: {

@@ -34,8 +34,16 @@ export async function getDb(): Promise<Db> {
 
 export function getObjectId(id: string): ObjectId {
   if (!id || !ObjectId.isValid(id)) {
-    return new ObjectId()
+    throw new Error(`Invalid ObjectId: "${id}"`)
   }
+  return new ObjectId(id)
+}
+
+/**
+ * Safe version — returns null instead of throwing. Use when the ID is optional.
+ */
+export function tryGetObjectId(id: string | undefined | null): ObjectId | null {
+  if (!id || !ObjectId.isValid(id)) return null
   return new ObjectId(id)
 }
 

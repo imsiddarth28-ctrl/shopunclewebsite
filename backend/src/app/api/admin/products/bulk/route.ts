@@ -1,26 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectToDatabase, getObjectId } from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import { parseCSV } from '@/lib/csv'
 import { ObjectId } from 'mongodb'
+import { handleCors, addCorsHeaders } from '@/lib/cors'
+import { rateLimit, adminLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
+  const corsResult = handleCors(request)
+  if (corsResult) return corsResult
+
+  // Admin bulk operations - rate limit 20 per minute
+  if (!rateLimit(request, adminLimit)) {
+    return addCorsHeaders(request, NextResponse.json({ error: 'Too many requests' }, { status: 429 }))
+  }
+
   try {
-    // 1. Check Auth (only ADMIN role allowed)
+    // Check Auth (only ADMIN role allowed)
     const session = await getServerSession(authOptions)
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return addCorsHeaders(request, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
     }
 
     const { csvText } = await request.json()
     if (!csvText) {
-      return NextResponse.json({ error: 'CSV data is required' }, { status: 400 })
+      return addCorsHeaders(request, NextResponse.json({ error: 'CSV data is required' }, { status: 400 }))
+    }
+
+    // Limit CSV text length to avoid memory fatigue
+    if (csvText.length > 5 * 1024 * 1024) { // 5 MB
+      return addCorsHeaders(request, NextResponse.json({ error: 'CSV size exceeds maximum limit of 5MB' }, { status: 400 }))
     }
 
     const parsedRecords = parseCSV(csvText)
     if (parsedRecords.length === 0) {
-      return NextResponse.json({ error: 'No valid rows found in CSV' }, { status: 400 })
+      return addCorsHeaders(request, NextResponse.json({ error: 'No valid rows found in CSV' }, { status: 400 }))
+    }
+
+    if (parsedRecords.length > 1000) {
+      return addCorsHeaders(request, NextResponse.json({ error: 'Bulk uploads are capped at 1000 products per request' }, { status: 400 }))
     }
 
     const { db } = await connectToDatabase()
@@ -102,7 +121,6 @@ export async function POST(request: NextRequest) {
         : []
 
       if (images.length === 0) {
-        // Default placeholder if no image provided
         images.push('/products/placeholder.jpg')
       }
 
@@ -123,7 +141,7 @@ export async function POST(request: NextRequest) {
         price,
         compareAtPrice: compareAtPrice > 0 ? compareAtPrice : null,
         sku,
-        categoryId: categoryId || new ObjectId('65f123456789012345678901'), // Fallback fallback if completely uncategorized
+        categoryId: categoryId || new ObjectId('65f123456789012345678901'),
         images,
         isCustomizable,
         isActive,
@@ -152,18 +170,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (bulkOps.length > 0) {
-      await db.collection('products').bulkWrite(bulkOps, { ordered: false })
+      await db.collection('products').bulkWrite(bulkOps)
     }
 
-    return NextResponse.json({
+    return addCorsHeaders(request, NextResponse.json({
       success: true,
       processed: processedCount,
-      errors: errors.length > 0 ? errors : null,
-      message: `Bulk import completed. Successfully processed ${processedCount} products.`
-    }, { status: 200 })
+      errors: errors.length > 0 ? errors : null
+    }))
 
-  } catch (error: any) {
-    console.error('Bulk upload products error:', error)
-    return NextResponse.json({ error: error.message || 'Failed to bulk import products' }, { status: 500 })
+  } catch (error) {
+    console.error('Bulk upload CSV error:', error)
+    return addCorsHeaders(request, NextResponse.json({ error: 'Internal server error during bulk import' }, { status: 500 }))
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCors(request) ?? new NextResponse(null, { status: 204 })
 }

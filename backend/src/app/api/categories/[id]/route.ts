@@ -1,56 +1,100 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectToDatabase } from '@/lib/mongodb'
-import { ObjectId } from 'mongodb'
+import { connectToDatabase, getObjectId } from '@/lib/mongodb'
+import { handleCors, addCorsHeaders } from '@/lib/cors'
+import { rateLimit, adminLimit } from '@/lib/rateLimit'
 
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user || session.user.role !== 'ADMIN') return null
-  return session
-}
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const corsResult = handleCors(request)
+  if (corsResult) return corsResult
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  if (!rateLimit(request, adminLimit)) {
+    return addCorsHeaders(request, NextResponse.json({ error: 'Too many requests' }, { status: 429 }))
+  }
+
   try {
-    const session = await requireAdmin()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await getServerSession(authOptions)
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return addCorsHeaders(request, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+    }
 
+    const { id } = await params
     const body = await request.json()
-    const { name, slug, description, image } = body
+    const name        = String(body.name        || '').trim().slice(0, 100)
+    const slug        = String(body.slug        || '').trim().slice(0, 100)
+    const description = String(body.description || '').trim().slice(0, 500)
+    const image       = String(body.image       || '').trim().slice(0, 500)
 
     if (!name || !slug) {
-      return NextResponse.json({ error: 'name and slug are required' }, { status: 400 })
+      return addCorsHeaders(request, NextResponse.json({ error: 'name and slug are required' }, { status: 400 }))
     }
 
     const { db } = await connectToDatabase()
-    const id = new ObjectId(params.id)
+
+    let catObjId
+    try {
+      catObjId = getObjectId(id)
+    } catch (e) {
+      return addCorsHeaders(request, NextResponse.json({ error: 'Invalid category ID' }, { status: 400 }))
+    }
 
     // Check slug uniqueness (exclude self)
-    const existing = await db.collection('categories').findOne({ slug, _id: { $ne: id } })
-    if (existing) return NextResponse.json({ error: 'Slug already in use' }, { status: 409 })
+    const existing = await db.collection('categories').findOne({ slug, _id: { $ne: catObjId } })
+    if (existing) {
+      return addCorsHeaders(request, NextResponse.json({ error: 'Slug already in use' }, { status: 409 }))
+    }
 
     await db.collection('categories').updateOne(
-      { _id: id },
-      { $set: { name, slug, description: description || '', image: image || '', updatedAt: new Date() } }
+      { _id: catObjId },
+      { $set: { name, slug, description, image, updatedAt: new Date() } }
     )
 
-    return NextResponse.json({ message: 'Category updated' })
+    return addCorsHeaders(request, NextResponse.json({ message: 'Category updated' }))
   } catch (error) {
     console.error('Update category error:', error)
-    return NextResponse.json({ error: 'Failed to update category' }, { status: 500 })
+    return addCorsHeaders(request, NextResponse.json({ error: 'Failed to update category' }, { status: 500 }))
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const session = await requireAdmin()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const corsResult = handleCors(request)
+  if (corsResult) return corsResult
 
+  if (!rateLimit(request, adminLimit)) {
+    return addCorsHeaders(request, NextResponse.json({ error: 'Too many requests' }, { status: 429 }))
+  }
+
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return addCorsHeaders(request, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+    }
+
+    const { id } = await params
     const { db } = await connectToDatabase()
-    await db.collection('categories').deleteOne({ _id: new ObjectId(params.id) })
-    return NextResponse.json({ message: 'Category deleted' })
+
+    let catObjId
+    try {
+      catObjId = getObjectId(id)
+    } catch (e) {
+      return addCorsHeaders(request, NextResponse.json({ error: 'Invalid category ID' }, { status: 400 }))
+    }
+
+    await db.collection('categories').deleteOne({ _id: catObjId })
+    return addCorsHeaders(request, NextResponse.json({ message: 'Category deleted' }))
   } catch (error) {
     console.error('Delete category error:', error)
-    return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 })
+    return addCorsHeaders(request, NextResponse.json({ error: 'Failed to delete category' }, { status: 500 }))
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCors(request) ?? new NextResponse(null, { status: 204 })
 }

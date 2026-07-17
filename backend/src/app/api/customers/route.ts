@@ -2,30 +2,41 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { connectToDatabase } from '@/lib/mongodb'
+import { handleCors, addCorsHeaders } from '@/lib/cors'
+import { rateLimit, adminLimit } from '@/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
 // GET /api/customers — admin only
 export async function GET(request: NextRequest) {
+  const corsResult = handleCors(request)
+  if (corsResult) return corsResult
+
+  if (!rateLimit(request, adminLimit)) {
+    return addCorsHeaders(request, NextResponse.json({ error: 'Too many requests' }, { status: 429 }))
+  }
+
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return addCorsHeaders(request, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
     }
 
     const { searchParams } = new URL(request.url)
-    const page  = parseInt(searchParams.get('page')  || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const search = searchParams.get('search') || ''
-    const skip  = (page - 1) * limit
+    const page   = Math.max(1, parseInt(searchParams.get('page')   || '1') || 1)
+    const limit  = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20') || 20))
+    const search = searchParams.get('search')?.slice(0, 100) || ''
+    const skip   = (page - 1) * limit
 
     const { db } = await connectToDatabase()
 
     const filter: any = { role: 'CUSTOMER' }
     if (search) {
+      // Sanitise: escape regex metacharacters, cap at 100 chars
+      const safeSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       filter.$or = [
-        { name:  { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { name:  { $regex: safeSearch, $options: 'i' } },
+        { email: { $regex: safeSearch, $options: 'i' } },
       ]
     }
 
@@ -55,12 +66,16 @@ export async function GET(request: NextRequest) {
       totalSpent: statsMap.get(u._id.toString())?.totalSpent || 0,
     }))
 
-    return NextResponse.json({
+    return addCorsHeaders(request, NextResponse.json({
       customers: enriched,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-    })
+    }))
   } catch (error) {
     console.error('Get customers error:', error)
-    return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 })
+    return addCorsHeaders(request, NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 }))
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCors(request) ?? new NextResponse(null, { status: 204 })
 }
